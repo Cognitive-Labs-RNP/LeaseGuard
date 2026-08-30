@@ -1,0 +1,217 @@
+/* ==========================================================================
+   LeaseGuard AI - Modern Design System & Streamlit Custom Styles
+   ========================================================================== */
+
+/* --- Global & Typography Styling --- */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+html, body, [class*="css"] {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Main Container Adjustments */
+.block-container {
+    padding-top: 2rem !important;
+    padding-bottom: 3rem !important;
+    padding-left: 2.5rem !important;
+    padding-right: 2.5rem !important;
+    max-width: 1300px;
+}
+
+/* --- Hero & Section Headers --- */
+.lg-header {
+    margin-bottom: 1.5rem;
+}
+
+.lg-title {
+    font-size: 1.85rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #0f172a;
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.lg-subtitle {
+    font-size: 0.95rem;
+    color: #64748b;
+    font-weight: 400;
+}
+
+/* --- Custom Cards & Containers --- */
+.lg-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease-in-out;
+    margin-bottom: 1rem;
+}
+
+.lg-card:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Metric Display Cards */
+.lg-metric-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+.lg-metric-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: #2563eb;
+}
+
+.lg-metric-card.success::before { background: #10b981; }
+.lg-metric-card.warning::before { background: #f59e0b; }
+.lg-metric-card.danger::before { background: #ef4444; }
+.lg-metric-card.purple::before { background: #8b5cf6; }
+
+.lg-metric-label {
+    font-size: 0.82rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #64748b;
+    margin-bottom: 0.35rem;
+}
+
+.lg-metric-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+
+.lg-metric-trend {
+    font-size: 0.78rem;
+    font-weight: 500;
+    margin-top: 0.35rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.lg-trend-up { color: #10b981; }
+.lg-trend-neutral { color: #64748b; }
+.lg-trend-down { color: #ef4444; }
+
+/* --- Badges & Pills --- */
+.lg-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+.lg-badge-blue { background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.lg-badge-green { background-color: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+.lg-badge-amber { background-color: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+.lg-badge-red { background-color: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+.lg-badge-gray { background-color: #f8fafc; color: #475569; border: 1px solid #e2e8f0; }
+
+/* --- Status Indicator Light --- */
+.lg-status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.lg-dot-green { background-color: #10b981; box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2); }
+.lg-dot-yellow { background-color: #f59e0b; box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2); }
+.lg-dot-red { background-color: #ef4444; box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2); }
+
+/* --- Sidebar Styling --- */
+[data-testid="stSidebar"] {
+    background-color: #f8fafc !important;
+    border-right: 1px solid #e2e8f0 !important;
+}
+
+.sidebar-brand-box {
+    padding: 1rem 0.75rem 1.25rem 0.75rem;
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 1.25rem;
+}
+
+.sidebar-brand-title {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sidebar-brand-desc {
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-top: 0.2rem;
+    font-weight: 500;
+}
+
+.sidebar-section-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    margin: 1.2rem 0 0.5rem 0.5rem;
+}
+
+.sidebar-footer-box {
+    margin-top: 2rem;
+    padding: 0.75rem;
+    background: #f1f5f9;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    font-size: 0.75rem;
+    color: #475569;
+}
+
+/* --- Placeholder Box --- */
+.lg-placeholder-box {
+    background: #fafafa;
+    border: 2px dashed #cbd5e1;
+    border-radius: 12px;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    color: #64748b;
+    margin: 1rem 0;
+}
+
+.lg-placeholder-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 0.4rem;
+}
+
+.lg-placeholder-desc {
+    font-size: 0.88rem;
+    color: #64748b;
+    max-width: 550px;
+    margin: 0 auto 1.25rem auto;
+    line-height: 1.5;
+}
