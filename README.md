@@ -69,30 +69,27 @@ LeaseGuard/
 
 ### 1. Prerequisites
 - Python 3.10+ installed on your system.
+- A Supabase project already created.
 
-### 2. Clone and Navigate to Directory
-```bash
-git clone <repository-url>
-cd LeaseGuard
-```
+### 2. Create a Supabase project
+1. Go to https://supabase.com and create a new project.
+2. Wait for the project to finish provisioning.
 
-### 3. Create and Activate a Virtual Environment (Recommended)
-```bash
-# Windows (PowerShell)
-python -m venv venv
-.\venv\Scripts\activate
+### 3. Enable Email authentication
+1. In your Supabase dashboard, open Authentication.
+2. Go to Providers.
+3. Enable Email authentication.
+4. Leave the rest of the default settings alone for now.
 
-# macOS / Linux
-python3 -m venv venv
-source venv/bin/activate
-```
+### 4. Open the SQL Editor and run the schema
+1. In Supabase, open SQL Editor.
+2. Copy the contents of `database/schema.sql`.
+3. Paste it into the SQL Editor.
+4. Run the SQL.
 
-### 4. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
+> Do not use the Supabase API to auto-create tables. This project expects the schema to be created manually in the dashboard.
 
-### 5. Configure Environment Variables
+### 5. Configure environment variables
 Copy `.env.example` to `.env`:
 ```bash
 # Windows (PowerShell)
@@ -101,9 +98,18 @@ copy .env.example .env
 # macOS / Linux
 cp .env.example .env
 ```
-*(Note: Supabase and RocketRide keys will be populated in upcoming phases).*
+Then update `.env` with the values from your Supabase project:
+```env
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_KEY=your-anon-key-or-project-key
+```
 
-### 6. Launch the Application
+### 6. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+
+### 7. Launch the Application
 ```bash
 streamlit run app.py
 ```
@@ -112,10 +118,53 @@ The app will open automatically in your browser at `http://localhost:8501`.
 
 ---
 
-## 🗺️ Implementation Roadmap
+## 🔐 Supabase Auth & Schema Responsibilities
+
+### What Supabase Auth handles
+Supabase Auth manages user authentication, including:
+- Email/password signup
+- Login and logout
+- Session tracking
+- Current authenticated user lookups
+- Secure handling of the auth.users table
+
+This app does not implement custom password hashing. We rely on Supabase's built-in authentication system.
+
+### What the SQL schema handles
+The SQL schema in `database/schema.sql` creates the application-owned tables for:
+- properties
+- documents
+- audits
+- findings
+- risk_scores
+- recovery_records
+- disputes
+
+These tables are not the authentication system. They are the business data tables used by LeaseGuard.
+
+### How user_id connects authenticated users to their properties
+Every application-owned record that needs ownership includes a `user_id` UUID column. This points to `auth.users(id)`.
+
+That means:
+- A user signs in through Supabase Auth.
+- The app reads the authenticated user's ID.
+- Each property, document, audit, finding, risk score, recovery record, and dispute can be linked to that user.
+- Queries can filter by `user_id` to ensure a user only sees their own data.
+
+### How to manually run the SQL
+1. Create your Supabase project.
+2. Go to Authentication → Providers.
+3. Enable Email authentication.
+4. Open SQL Editor.
+5. Copy and paste the contents of `database/schema.sql`.
+6. Run the SQL.
+7. Create `.env` from `.env.example`.
+8. Add `SUPABASE_URL` and `SUPABASE_KEY`.
+9. Run `streamlit run app.py`.
+
+---
+
+## 🗺️ Implementation Status
 
 - [x] **Phase 1: Foundation & Scaffolding** (Streamlit app, 9 page views, modular services, CSS design system, configuration templates)
-- [ ] **Phase 2: AI Pipeline & PDF Parsing** (PyMuPDF extraction, RocketRide lease rule extraction, invoice line-item extraction)
-- [ ] **Phase 3: Database & Audit Engine** (Supabase schema, automated reconciliation logic, CAM cap enforcement)
-- [ ] **Phase 4: Risk & Recovery Engine** (Risk scoring matrix, dispute letter generator with ReportLab PDF export)
-- [ ] **Phase 5: Final Polish & Demo Prep** (End-to-end testing, live property dataset demonstration)
+- [x] **Phase 2: Supabase Auth & Database Schema** (Email/password auth flow, schema for user-owned records, current-user helpers, setup docs)
