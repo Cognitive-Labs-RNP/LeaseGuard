@@ -1,0 +1,54 @@
+{
+	"components": [
+		{
+			"id": "chat_1",
+			"provider": "chat",
+			"config": {
+				"hideForm": true,
+				"mode": "Source",
+				"parameters": {},
+				"type": "chat"
+			}
+		},
+		{
+			"id": "llm_groq_1",
+			"provider": "llm_openai_api",
+			"config": {
+				"profile": "custom",
+				"custom": {
+					"model": "llama-3.3-70b-versatile",
+					"base_url": "https://api.groq.com/openai/v1",
+					"modelTotalTokens": 128000,
+					"apikey": "${ROCKETRIDE_GROQ_KEY}"
+				},
+				"parameters": {}
+			},
+			"input": [
+				{
+					"lane": "questions",
+					"from": "chat_1"
+				}
+			]
+		},
+		{
+			"id": "response_answers_1",
+			"provider": "response_answers",
+			"config": {
+				"laneName": "answers"
+			},
+			"input": [
+				{
+					"lane": "answers",
+					"from": "llm_groq_1"
+				}
+			]
+		}
+	],
+	"project_id": "d8b95f02-974b-5f3c-a382-81e41d6f8c32",
+	"viewport": {
+		"x": 0,
+		"y": 0,
+		"zoom": 1
+	},
+	"version": 1
+}

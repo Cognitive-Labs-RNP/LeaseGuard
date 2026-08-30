@@ -1,0 +1,51 @@
+{
+	"components": [
+		{
+			"id": "chat_1",
+			"provider": "chat",
+			"config": {
+				"hideForm": true,
+				"mode": "Source",
+				"parameters": {},
+				"type": "chat"
+			}
+		},
+		{
+			"id": "llm_gemini_1",
+			"provider": "llm_gemini",
+			"config": {
+				"profile": "gemini-2_5-flash",
+				"gemini-2_5-flash": {
+					"apikey": "${ROCKETRIDE_GEMINI_KEY}"
+				},
+				"parameters": {}
+			},
+			"input": [
+				{
+					"lane": "questions",
+					"from": "chat_1"
+				}
+			]
+		},
+		{
+			"id": "response_answers_1",
+			"provider": "response_answers",
+			"config": {
+				"laneName": "answers"
+			},
+			"input": [
+				{
+					"lane": "answers",
+					"from": "llm_gemini_1"
+				}
+			]
+		}
+	],
+	"project_id": "c7a84e91-863a-4e2b-9271-70d30c5e7b21",
+	"viewport": {
+		"x": 0,
+		"y": 0,
+		"zoom": 1
+	},
+	"version": 1
+}

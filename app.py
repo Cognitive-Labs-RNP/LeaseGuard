@@ -123,8 +123,8 @@ def render_sidebar() -> str:
             """
             <div style="font-size: 0.8rem; line-height: 1.8; color: #475569;">
                 <div><span class="lg-status-dot lg-dot-green"></span> Engine: <strong style="color: #0f172a;">Online</strong></div>
-                <div><span class="lg-status-dot lg-dot-yellow"></span> Database: <span style="color: #64748b;">Supabase Auth ready</span></div>
-                <div><span class="lg-status-dot lg-dot-yellow"></span> AI Pipelines: <span style="color: #64748b;">Scaffolded</span></div>
+                <div><span class="lg-status-dot lg-dot-green"></span> Database: <strong style="color: #0f172a;">Supabase Auth active</strong></div>
+                <div><span class="lg-status-dot lg-dot-green"></span> AI Pipelines: <strong style="color: #0f172a;">RocketRide Active</strong></div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -133,13 +133,14 @@ def render_sidebar() -> str:
         st.markdown(
             """
             <div class="sidebar-footer-box">
-                <strong>LeaseGuard AI v0.1</strong><br>
+                <strong>LeaseGuard AI v0.3</strong><br>
                 24-Hour Hackathon Build<br>
-                <span style="color: #2563eb; font-weight: 600;">Phase 2: Auth & Schema</span>
+                <span style="color: #2563eb; font-weight: 600;">Phase 3: RocketRide AI Pipeline</span>
             </div>
             """,
             unsafe_allow_html=True,
         )
+
 
     return selected_page
 

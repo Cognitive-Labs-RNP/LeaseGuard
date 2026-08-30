@@ -1,7 +1,9 @@
-# LeaseGuard AI - Core Dependencies (Phase 1)
+# LeaseGuard AI - Core Dependencies
 streamlit>=1.35.0
 plotly>=5.20.0
 python-dotenv>=1.0.0
 pymupdf>=1.24.0
 pandas>=2.2.0
 supabase>=2.7.0
+rocketride>=1.3.0
+pydantic>=2.7.0
