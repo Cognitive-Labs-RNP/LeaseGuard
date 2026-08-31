@@ -8,6 +8,7 @@ import pandas as pd
 from services.auth import require_auth
 from services.recovery_engine import RecoveryEngine, VALID_RECOVERY_STATUSES
 from services.supabase import SupabaseService
+from utils.ui import empty_state, page_header, section_header
 
 
 def render():
@@ -17,15 +18,7 @@ def render():
         st.warning("🔒 Please sign in to access LeaseGuard.")
         return
 
-    st.markdown(
-        """
-        <div class="lg-header">
-            <div class="lg-title">💰 Financial Recovery Tracker</div>
-            <div class="lg-subtitle">Track the lifecycle of disputed funds from initial audit detection to landlord rent credit.</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    page_header("Recovery", "Financial Recovery", "Track disputed funds from initial detection through review and recovered credit.")
 
     supabase = SupabaseService()
     recovery_records = supabase.get_recovery_records()
@@ -81,8 +74,7 @@ def render():
         )
 
     st.markdown("<div style='height: 1.25rem;'></div>", unsafe_allow_html=True)
-    st.markdown("### 🔄 Recovery Pipeline Lifecycle Stage Flow")
-    st.caption("Detected ➔ Disputed ➔ Under Review ➔ Recovered")
+    section_header("Recovery Pipeline", "Detected  →  Disputed  →  Under Review  →  Recovered")
 
     # Display stage columns (4 exact stages)
     stages = ["Detected", "Disputed", "Under Review", "Recovered"]
@@ -107,10 +99,10 @@ def render():
             )
 
     st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
-    st.markdown("### 📋 Active Recovery Claims & Lifecycle Status Updates")
+    section_header("Recovery Claims", "Review individual claims and update their current lifecycle stage.")
 
     if not recovery_records:
-        st.info("No financial recovery claims tracked yet. Run an audit in the 🔍 Audits module to flag overcharges for recovery.")
+        empty_state("No recovery claims yet", "Run an audit to identify overcharges and begin tracking recovery.", "○")
         return
 
     # Claim updater list

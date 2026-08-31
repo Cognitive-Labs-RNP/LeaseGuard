@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from supabase import Client, create_client
 
 from services.auth import require_authenticated_user_id
+from services.demo_data import get_demo_app_records, is_demo_mode
 
 load_dotenv()
 
@@ -21,6 +22,7 @@ class SupabaseService:
         self.url = (os.getenv("SUPABASE_URL") or "").strip()
         self.key = (os.getenv("SUPABASE_KEY") or os.getenv("SUPABASE_ANON_KEY") or "").strip()
         self.client: Optional[Client] = None
+        self.demo_mode = is_demo_mode()
 
         if self.url and self.key and "your-project" not in self.url:
             try:
@@ -41,6 +43,8 @@ class SupabaseService:
 
     def get_properties(self, user_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Fetch properties belonging to current user."""
+        if self.demo_mode:
+            return list(get_demo_app_records()["properties"])
         active_user_id = user_id or self.get_current_user_id()
         if self.client is None or not active_user_id:
             return []
@@ -50,6 +54,8 @@ class SupabaseService:
 
     def create_property(self, property_data: Dict[str, Any], user_id: Optional[str] = None) -> Dict[str, Any]:
         """Create property and associate with user."""
+        if self.demo_mode:
+            return dict(property_data)
         active_user_id = user_id or self.get_current_user_id()
         if self.client is None or not active_user_id:
             return property_data
@@ -61,6 +67,11 @@ class SupabaseService:
 
     def get_documents(self, property_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Fetch documents for current user."""
+        if self.demo_mode:
+            records = list(get_demo_app_records()["documents"])
+            if property_id:
+                return [r for r in records if str(r.get("property_id")) == str(property_id)]
+            return records
         active_user_id = self.get_current_user_id()
         if self.client is None or not active_user_id:
             return []
@@ -91,6 +102,8 @@ class SupabaseService:
         if active_user_id:
             payload["user_id"] = active_user_id
 
+        if self.demo_mode:
+            return {**payload, "id": f"demo-doc-{len(get_demo_app_records()['documents']) + 1}"}
         if self.client is not None and active_user_id:
             response = self.client.table("documents").insert(payload).execute()
             return (response.data or [payload])[0]
@@ -99,6 +112,11 @@ class SupabaseService:
 
     def get_audits(self, property_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Fetch audits for current user."""
+        if self.demo_mode:
+            records = list(get_demo_app_records()["audits"])
+            if property_id:
+                return [r for r in records if str(r.get("property_id")) == str(property_id)]
+            return records
         active_user_id = self.get_current_user_id()
         if self.client is None or not active_user_id:
             return []
@@ -127,6 +145,8 @@ class SupabaseService:
         if active_user_id:
             payload["user_id"] = active_user_id
 
+        if self.demo_mode:
+            return {**payload, "id": "demo-audit-live"}
         if self.client is not None and active_user_id:
             response = self.client.table("audits").insert(payload).execute()
             saved = (response.data or [payload])[0]
@@ -139,6 +159,13 @@ class SupabaseService:
 
     def get_findings(self, audit_id: Optional[str] = None, property_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Fetch findings for current user."""
+        if self.demo_mode:
+            records = list(get_demo_app_records()["findings"])
+            if audit_id:
+                records = [r for r in records if str(r.get("audit_id")) == str(audit_id)]
+            if property_id:
+                records = [r for r in records if str(r.get("property_id")) == str(property_id)]
+            return records
         active_user_id = self.get_current_user_id()
         if self.client is None or not active_user_id:
             return []
@@ -180,6 +207,8 @@ class SupabaseService:
                 item["user_id"] = active_user_id
             payloads.append(item)
 
+        if self.demo_mode:
+            return payloads
         if self.client is not None and active_user_id and payloads:
             response = self.client.table("findings").insert(payloads).execute()
             return response.data or payloads
@@ -209,6 +238,8 @@ class SupabaseService:
         if active_user_id:
             payload["user_id"] = active_user_id
 
+        if self.demo_mode:
+            return {**payload, "id": "demo-risk-live"}
         if self.client is not None and active_user_id:
             response = self.client.table("risk_scores").insert(payload).execute()
             return (response.data or [payload])[0]
@@ -217,6 +248,11 @@ class SupabaseService:
 
     def get_risk_scores(self, property_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Fetch risk scores for current user."""
+        if self.demo_mode:
+            records = list(get_demo_app_records()["risk_scores"])
+            if property_id:
+                return [r for r in records if str(r.get("property_id")) == str(property_id)]
+            return records
         active_user_id = self.get_current_user_id()
         if self.client is None or not active_user_id:
             return []
@@ -252,6 +288,8 @@ class SupabaseService:
         if active_user_id:
             payload["user_id"] = active_user_id
 
+        if self.demo_mode:
+            return {**payload, "id": "demo-recovery-live"}
         if self.client is not None and active_user_id:
             response = self.client.table("recovery_records").insert(payload).execute()
             return (response.data or [payload])[0]
@@ -260,6 +298,11 @@ class SupabaseService:
 
     def get_recovery_records(self, property_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """Fetch recovery records for current user."""
+        if self.demo_mode:
+            records = list(get_demo_app_records()["recovery_records"])
+            if property_id:
+                return [r for r in records if str(r.get("property_id")) == str(property_id)]
+            return records
         active_user_id = self.get_current_user_id()
         if self.client is None or not active_user_id:
             return []
@@ -285,6 +328,9 @@ class SupabaseService:
         if recovered_amount is not None:
             payload["recovered_amount"] = round(float(recovered_amount), 2)
 
+        if self.demo_mode:
+            payload["id"] = record_id
+            return payload
         if self.client is not None:
             response = (
                 self.client.table("recovery_records")

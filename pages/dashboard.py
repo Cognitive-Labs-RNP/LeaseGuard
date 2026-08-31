@@ -9,6 +9,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from services.auth import require_auth
 from services.supabase import SupabaseService
+from utils.ui import empty_state, metric_card, page_header, section_header
 
 
 def _get_plotly_layout_defaults():
@@ -30,15 +31,16 @@ def render():
         st.warning("🔒 Please sign in to access LeaseGuard.")
         return
 
-    st.markdown(
-        """
-        <div class="lg-header">
-            <div class="lg-title">📊 Executive Dashboard</div>
-            <div class="lg-subtitle">Portfolio-wide commercial lease auditing & financial recovery intelligence.</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    page_header("LeaseGuard", "Portfolio Intelligence", "Monitor billing risk, recoverable spend, and lease compliance across your portfolio.")
+
+    # Show demo banner if user is demo account
+    if user.get("email") == "demo@leaseguard.ai":
+        st.info(
+            "🎯 **You are exploring the LeaseGuard demo workspace.** "
+            "This is a read-only demonstration with sample data. "
+            "[Sign in with your own account](/) to audit your real properties.",
+            icon="✨"
+        )
 
     supabase = SupabaseService()
     properties = supabase.get_properties()
@@ -58,74 +60,6 @@ def render():
 
     recovered_amt = sum(float(r.get("recovered_amount", 0.0)) for r in recovery_records)
 
-    # -------------------------------------------------------------------------
-    # 1. Portfolio KPIs
-    # -------------------------------------------------------------------------
-    col1, col2, col3, col4, col5 = st.columns(5)
-    with col1:
-        st.markdown(
-            f"""
-            <div class="lg-metric-card">
-                <div class="lg-metric-label">Total Properties</div>
-                <div class="lg-metric-value">{total_properties}</div>
-                <div class="lg-metric-trend lg-trend-neutral">Active Portfolio</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-    with col2:
-        st.markdown(
-            f"""
-            <div class="lg-metric-card purple">
-                <div class="lg-metric-label">Total Audits</div>
-                <div class="lg-metric-value">{total_audits}</div>
-                <div class="lg-metric-trend lg-trend-up">Sessions Completed</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-    with col3:
-        st.markdown(
-            f"""
-            <div class="lg-metric-card danger">
-                <div class="lg-metric-label">Total Findings</div>
-                <div class="lg-metric-value">{total_findings}</div>
-                <div class="lg-metric-trend lg-trend-down">Discrepancies Flagged</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-    with col4:
-        st.markdown(
-            f"""
-            <div class="lg-metric-card warning">
-                <div class="lg-metric-label">Potential Recovery</div>
-                <div class="lg-metric-value">${potential_rec:,.2f}</div>
-                <div class="lg-metric-trend lg-trend-neutral">Identified Claims</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-    with col5:
-        st.markdown(
-            f"""
-            <div class="lg-metric-card success">
-                <div class="lg-metric-label">Recovered Amount</div>
-                <div class="lg-metric-value">${recovered_amt:,.2f}</div>
-                <div class="lg-metric-trend lg-trend-up">Settled Credits</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-
-    st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
-
-    # -------------------------------------------------------------------------
-    # 2. Portfolio Risk & Recovery Tracking Summary Row
-    # -------------------------------------------------------------------------
-    rcol1, rcol2 = st.columns([1, 1])
-
-    # Compute risk score summary
     if risk_scores:
         scores_list = [float(rs.get("score", 0)) for rs in risk_scores]
         avg_risk = round(sum(scores_list) / len(scores_list), 1)
@@ -133,8 +67,29 @@ def render():
         med_risk_cnt = sum(1 for s in scores_list if 30 <= s < 70)
         low_risk_cnt = sum(1 for s in scores_list if s < 30)
     else:
-        avg_risk = 0.0
-        high_risk_cnt, med_risk_cnt, low_risk_cnt = 0, 0, 0
+        avg_risk, high_risk_cnt, med_risk_cnt, low_risk_cnt = 0.0, 0, 0, 0
+
+    # -------------------------------------------------------------------------
+    # 1. Portfolio KPIs
+    # -------------------------------------------------------------------------
+    col1, col2, col3, col4, col5 = st.columns(5)
+    with col1:
+        metric_card("Total Properties", str(total_properties), "Portfolio assets", "")
+    with col2:
+        metric_card("Active Audits", str(total_audits), "Completed audit sessions", "purple")
+    with col3:
+        metric_card("Potential Recovery", f"${potential_rec:,.2f}", f"{total_findings} flagged findings", "warning")
+    with col4:
+        metric_card("Recovered Amount", f"${recovered_amt:,.2f}", "Settled credits", "success")
+    with col5:
+        metric_card("Portfolio Risk", f"{avg_risk:g} / 100" if risk_scores else "Unassessed", "Latest portfolio assessment", "danger" if avg_risk >= 70 else "warning")
+
+    st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
+
+    # -------------------------------------------------------------------------
+    # 2. Portfolio Risk & Recovery Tracking Summary Row
+    # -------------------------------------------------------------------------
+    rcol1, rcol2 = st.columns([1, 1])
 
     risk_badge = "High Exposure" if avg_risk >= 70 else ("Moderate Exposure" if avg_risk >= 30 else "Low Risk")
     risk_color_cls = "lg-badge-red" if avg_risk >= 70 else ("lg-badge-amber" if avg_risk >= 30 else "lg-badge-green")

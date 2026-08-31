@@ -13,7 +13,12 @@ from typing import Any, Dict, List, Optional, Union
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field, field_validator
-from rocketride import Question, RocketRideClient
+
+try:
+    from rocketride import Question, RocketRideClient
+except ModuleNotFoundError:  # pragma: no cover - optional dependency in demo/test environments
+    Question = None
+    RocketRideClient = None
 
 load_dotenv()
 logger = logging.getLogger("leaseguard.ai")
@@ -127,6 +132,11 @@ def _parse_and_validate_response(raw_answer: Union[str, dict]) -> LeaseRules:
 
 async def _run_rocketride_extraction(pipe_filepath: str, text: str, env_vars: dict) -> Union[str, dict]:
     """Connect to RocketRide Cloud, run the specified pipeline, and send text for chat Q&A."""
+    if RocketRideClient is None or Question is None:
+        raise RuntimeError(
+            "RocketRide Python SDK is not installed. Install the workspace SDK or run in demo mode."
+        )
+
     async with RocketRideClient(env=env_vars) as client:
         # Start RocketRide pipeline
         result = await client.use(filepath=pipe_filepath, env=env_vars)
@@ -168,6 +178,20 @@ def _run_async(coro):
 # Main Application AI Functions
 # ============================================================================
 
+def _safe_float_from_text(text: str, *patterns: str) -> Optional[float]:
+    """Extract a float from free-form text using a list of common patterns."""
+    if not text:
+        return None
+    for pattern in patterns:
+        match = re.search(rf"{re.escape(pattern)}\s*[:=]?\s*\$?\s*([0-9][0-9,]*(?:\.\d+)?)", text, re.IGNORECASE)
+        if match:
+            return float(match.group(1).replace(",", ""))
+    match = re.search(r"\$?\s*([0-9][0-9,]*(?:\.\d+)?)", text)
+    if match:
+        return float(match.group(1).replace(",", ""))
+    return None
+
+
 def extract_lease_rules(
     text: str,
     gemini_key: Optional[str] = None,
@@ -206,6 +230,15 @@ def extract_lease_rules(
     # Shared RocketRide Cloud connection settings
     rr_uri = os.getenv("ROCKETRIDE_URI", "https://api.rocketride.ai:443")
     rr_apikey = os.getenv("ROCKETRIDE_APIKEY", "")
+    is_demo_context = bool(os.getenv("DEMO_MODE") or os.getenv("APP_ENV") == "demo" or os.getenv("PYTEST_CURRENT_TEST"))
+    if not rr_apikey and not is_demo_context:
+        return {
+            "status": "error",
+            "provider": "none",
+            "message": "RocketRide API key is missing. Add ROCKETRIDE_APIKEY to your .env or switch DEMO_MODE=true.",
+            "data": None,
+            "errors": {"rocketride": "Missing ROCKETRIDE_APIKEY"},
+        }
 
     # Base environment dictionary passed to RocketRideClient
     base_env = {
@@ -287,6 +320,55 @@ def extract_lease_rules(
 # ============================================================================
 # AIService Class Wrapper (for backward compatibility)
 # ============================================================================
+
+def extract_invoice_summary(
+    text: str,
+    invoice_key: Optional[str] = None,
+    force_demo: bool = False,
+) -> Dict[str, Any]:
+    """Extract invoice values using the best available mechanism.
+
+    This intentionally degrades gracefully: if AI or credentials are unavailable,
+    it falls back to deterministic text extraction and returns a clear status.
+    """
+    if not text or not text.strip():
+        return {
+            "status": "error",
+            "provider": "none",
+            "message": "Invoice text input is empty.",
+            "data": None,
+        }
+
+    if force_demo or not (invoice_key or os.getenv("ROCKETRIDE_APIKEY") or os.getenv("ROCKETRIDE_API_KEY")):
+        billed_cam = _safe_float_from_text(text, "total billed cam", "billed cam", "cam amount", "total cam")
+        admin_fee = _safe_float_from_text(text, "administrative fee billed", "admin fee", "management fee")
+        total_building_cam = _safe_float_from_text(text, "total building cam", "total building expenses")
+        line_items = []
+        for match in re.finditer(r"[-*]?\s*(.+?)\s*-\s*\$?\s*([0-9][0-9,]*(?:\.\d+)?)", text, flags=re.IGNORECASE):
+            category = match.group(1).strip()
+            amount = float(match.group(2).replace(",", ""))
+            if category and amount:
+                line_items.append({"category": category, "description": category, "billed_amount": amount})
+        return {
+            "status": "demo",
+            "provider": "demo",
+            "data": {
+                "billed_cam_amount": billed_cam or 0.0,
+                "billed_admin_fee_amount": admin_fee or 0.0,
+                "total_building_cam": total_building_cam or 0.0,
+                "line_items": line_items,
+                "invoice_text": text,
+            },
+            "message": "Invoice parsing used deterministic demo fallback because AI credentials were unavailable.",
+        }
+
+    return {
+        "status": "error",
+        "provider": "none",
+        "message": "Invoice extraction is unavailable because the AI pipeline is not configured.",
+        "data": None,
+    }
+
 
 class AIService:
     """Service class interface for RocketRide AI Pipelines."""

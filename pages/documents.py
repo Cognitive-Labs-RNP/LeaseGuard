@@ -7,7 +7,9 @@ import datetime
 import streamlit as st
 import pandas as pd
 from services.auth import require_auth
+from services.document_utils import extract_uploaded_text
 from services.supabase import SupabaseService
+from utils.ui import empty_state, page_header, section_header
 
 
 def render():
@@ -17,15 +19,7 @@ def render():
         st.warning("🔒 Please sign in to access LeaseGuard.")
         return
 
-    st.markdown(
-        """
-        <div class="lg-header">
-            <div class="lg-title">📁 Document Vault</div>
-            <div class="lg-subtitle">Upload commercial leases and reconciliation statements associated with portfolio properties.</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    page_header("Portfolio", "Document Vault", "Upload lease and billing documents, then use them in an audit.")
 
     supabase = SupabaseService()
     properties = supabase.get_properties()
@@ -34,13 +28,13 @@ def render():
     if "session_documents" not in st.session_state:
         st.session_state["session_documents"] = []
 
-    st.markdown("### 📤 Upload New Document")
+    section_header("Upload Document", "Select a property, classify the document, then add the source file to its vault.")
 
     with st.container():
         st.markdown('<div class="lg-card">', unsafe_allow_html=True)
 
         if not properties:
-            st.info("⚠️ No properties available. Please add a commercial property first to upload documents.")
+            empty_state("No properties added", "Add a property to start monitoring lease compliance and uploading documents.", "○")
             with st.expander("➕ Add Property Now", expanded=True):
                 with st.form("quick_add_prop_docs"):
                     new_pname = st.text_input("Property Name", placeholder="e.g. Skyline Commercial Center")
@@ -67,7 +61,7 @@ def render():
         
         ucol1, ucol2, ucol3 = st.columns(3)
         with ucol1:
-            selected_prop_label = st.selectbox("Target Property", list(prop_map.keys()))
+            selected_prop_label = st.selectbox("Selected Property", list(prop_map.keys()))
             selected_prop = prop_map[selected_prop_label]
             selected_prop_id = selected_prop.get("id")
         with ucol2:
@@ -75,7 +69,7 @@ def render():
         with ucol3:
             doc_title = st.text_input("Document Title / Reference", placeholder="e.g. 2026_Master_Lease_Amendment.pdf")
 
-        uploaded_file = st.file_uploader("Choose PDF or TXT Document File", type=["pdf", "txt"])
+        uploaded_file = st.file_uploader("Selected File (PDF or TXT)", type=["pdf", "txt"], help="Upload a lease, invoice, reconciliation statement, or amendment.")
 
         upload_btn = st.button("📥 Upload to Document Vault", type="primary", use_container_width=True)
 
@@ -91,10 +85,9 @@ def render():
 
                     content_text = ""
                     if uploaded_file is not None:
-                        try:
-                            content_text = uploaded_file.getvalue().decode("utf-8", errors="ignore")
-                        except Exception:
-                            content_text = f"Parsed binary file content for {fname}"
+                        content_text = extract_uploaded_text(uploaded_file)
+                        if not content_text.strip():
+                            st.warning("⚠️ The uploaded file did not contain readable text. It was saved as metadata only; please validate the PDF or upload a text file.")
 
                     doc_payload = {
                         "property_id": selected_prop_id,
@@ -121,12 +114,12 @@ def render():
                     else:
                         st.error(f"Document upload failed: Database persistence error.")
                 except Exception as exc:
-                    st.error(f"Document upload failed: {str(exc)}")
+                    st.error("Unable to upload this document. Confirm that the file is readable and try again.")
 
         st.markdown('</div>', unsafe_allow_html=True)
 
     st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
-    st.markdown("### 📋 Document Storage Vault")
+    section_header("Document Vault", "Documents are available here for review and audit selection.")
 
     # Combine database vault records and session records
     combined_docs = []
@@ -147,7 +140,7 @@ def render():
             })
 
     if not combined_docs:
-        st.info("No documents uploaded yet. Use the form above to upload commercial lease contracts and reconciliation statements.")
+        empty_state("No documents uploaded", "Upload a lease and an invoice or reconciliation statement to run your first audit.", "□")
     else:
         st.dataframe(pd.DataFrame(combined_docs), use_container_width=True, hide_index=True)
 

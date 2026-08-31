@@ -9,6 +9,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from services.auth import require_auth
 from services.supabase import SupabaseService
+from utils.ui import empty_state, metric_card, page_header, section_header
 
 
 def _get_plotly_layout_defaults():
@@ -27,15 +28,7 @@ def render():
         st.warning("🔒 Please sign in to access LeaseGuard.")
         return
 
-    st.markdown(
-        """
-        <div class="lg-header">
-            <div class="lg-title">🛡️ Lease & Portfolio Risk Analysis</div>
-            <div class="lg-subtitle">Quantitative 0–100 risk scoring across CAM, rent escalation, admin fees, tax provisions, and audit rights.</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    page_header("Audit", "Risk Analysis", "Quantitative exposure scoring across CAM, escalations, administrative fees, tax, and audit rights.")
 
     supabase = SupabaseService()
     risk_scores = supabase.get_risk_scores()
@@ -91,35 +84,30 @@ def render():
     st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
 
     if not risk_scores:
-        st.info("No risk scores generated yet. Run an audit in the 🔍 Audits module to calculate lease risk ratings.")
+        empty_state("No risk assessments yet", "Run an audit to calculate lease risk ratings for this portfolio.", "○")
         return
 
     # Risk Radar & Bar Chart Row
     col_chart1, col_chart2 = st.columns(2)
 
     with col_chart1:
-        st.markdown("### 🕸️ Risk Category Radar")
-        categories = ["CAM Risk", "Rent Escalation", "Admin Fee Risk", "Tax Risk", "Audit Rights"]
-        scores_active = [85, 75, 80, 50, 90]
-
-        fig_radar = go.Figure()
-        fig_radar.add_trace(go.Scatterpolar(
-            r=scores_active, theta=categories, fill='toself', name='Lease Risk Profile',
-            line=dict(color='#f43f5e', width=2)
-        ))
-        fig_radar.update_layout(
-            **_get_plotly_layout_defaults(),
-            polar=dict(
-                bgcolor="rgba(0,0,0,0)",
-                radialaxis=dict(visible=True, range=[0, 100], gridcolor="rgba(255,255,255,0.1)"),
-                angularaxis=dict(gridcolor="rgba(255,255,255,0.1)")
-            ),
-            height=320
-        )
-        st.plotly_chart(fig_radar, use_container_width=True)
+        section_header("Risk Category Breakdown", "Lease-vulnerability signals assessed by the existing risk engine.")
+        category_scores = risk_scores[-1].get("category_scores") if risk_scores else None
+        if isinstance(category_scores, dict) and category_scores:
+            categories = [key.replace("_", " ").title() for key in category_scores]
+            scores_active = [float(value) for value in category_scores.values()]
+            fig_radar = go.Figure()
+            fig_radar.add_trace(go.Scatterpolar(
+                r=scores_active, theta=categories, fill='toself', name='Lease Risk Profile',
+                line=dict(color='#f43f5e', width=2)
+            ))
+            fig_radar.update_layout(**_get_plotly_layout_defaults(), polar=dict(bgcolor="rgba(0,0,0,0)", radialaxis=dict(visible=True, range=[0, 100], gridcolor="rgba(255,255,255,0.1)"), angularaxis=dict(gridcolor="rgba(255,255,255,0.1)")), height=360, showlegend=False)
+            st.plotly_chart(fig_radar, use_container_width=True)
+        else:
+            empty_state("Category detail unavailable", "Risk category detail is shown when it is available in the saved assessment.", "○")
 
     with col_chart2:
-        st.markdown("### 📊 Property Risk Scorecard")
+        section_header("Property Risk Scorecard", "Latest risk scores across audited properties.")
         risk_df = pd.DataFrame([
             {"Property": rs.get("property_id", "Property"), "Score": float(rs.get("score", 0)), "Tier": rs.get("risk_level", "Moderate")}
             for rs in risk_scores
@@ -131,7 +119,7 @@ def render():
         fig_bar.update_layout(**_get_plotly_layout_defaults(), height=320)
         st.plotly_chart(fig_bar, use_container_width=True)
 
-    st.markdown("### 📋 Property Risk Factor Diagnostics")
+    section_header("Risk Diagnostics", "Source risk records used in the portfolio score.")
     st.dataframe(pd.DataFrame(risk_scores), use_container_width=True, hide_index=True)
 
 

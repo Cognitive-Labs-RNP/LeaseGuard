@@ -7,6 +7,7 @@ import os
 import streamlit as st
 from services.supabase import SupabaseService
 from services.ai import AIService
+from utils.ui import page_header, section_header
 
 
 def render():
@@ -17,21 +18,20 @@ def render():
         st.warning("🔒 Please sign in to access LeaseGuard.")
         return
 
-    st.markdown(
-        """
-        <div class="lg-header">
-            <div class="lg-title">⚙️ System Settings & API Configuration</div>
-            <div class="lg-subtitle">Manage API integration keys, Supabase database connections, and platform parameters.</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    page_header("System", "Settings", "Account context, secure provider configuration, database status, and diagnostics.")
 
-    tab1, tab2, tab3 = st.tabs(["🔑 API Credentials", "🗄️ Database & Storage", "📊 System Health & Diagnostics"])
+    tab_account, tab_auth, tab1, tab2, tab3 = st.tabs(["Account", "Authentication", "AI Providers", "Supabase", "System Diagnostics"])
+
+    with tab_account:
+        section_header("Account", "Current application account context.")
+        st.text_input("Signed-in email", value=user.get("email", ""), disabled=True)
+
+    with tab_auth:
+        section_header("Authentication", "LeaseGuard uses Supabase email authentication for sign-in and registration.")
+        st.info("Use the sidebar Logout control to end this session. Authentication settings are managed in Supabase.")
 
     with tab1:
-        st.markdown("### 🤖 AI Engine & RocketRide Pipelines")
-        st.caption("Configure primary and fallback AI provider API keys.")
+        section_header("AI Providers", "Configure RocketRide and the primary/fallback AI keys for this active session.")
 
         rr_key = st.text_input("RocketRide API Key", value=os.getenv("ROCKETRIDE_APIKEY", ""), type="password")
         gemini_key = st.text_input("Gemini API Key (Primary LLM)", value=os.getenv("GEMINI_API_KEY", ""), type="password")
@@ -44,7 +44,7 @@ def render():
             st.success("API credentials saved for active session.")
 
     with tab2:
-        st.markdown("### 🗄️ Supabase PostgreSQL & Storage")
+        section_header("Supabase", "Connection status for authentication and application records.")
         supabase_service = SupabaseService()
         is_cfg = supabase_service.is_configured()
 
@@ -60,7 +60,7 @@ def render():
             st.warning("⚠️ Supabase credentials not set in environment. App running in local memory mode.")
 
     with tab3:
-        st.markdown("### 🛠️ Diagnostic Status")
+        section_header("System Diagnostics", "Operational status for the existing application services.")
         ai_service = AIService()
 
         diag_data = [

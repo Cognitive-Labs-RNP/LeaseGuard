@@ -7,6 +7,7 @@ import streamlit as st
 import pandas as pd
 from services.auth import require_auth
 from services.supabase import SupabaseService
+from utils.ui import empty_state, page_header, section_header
 
 
 def render():
@@ -16,27 +17,19 @@ def render():
         st.warning("🔒 Please sign in to access LeaseGuard.")
         return
 
-    st.markdown(
-        """
-        <div class="lg-header">
-            <div class="lg-title">⚠️ Findings & Overcharges</div>
-            <div class="lg-subtitle">Filter, inspect evidence, and generate dispute letters for identified overcharges.</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    page_header("Audit", "Findings", "Review flagged discrepancies, supporting evidence, and potential recovery.")
 
     supabase = SupabaseService()
     findings_data = supabase.get_findings()
 
     if not findings_data:
-        st.info("No discrepancy findings available yet. Run an audit in the 🔍 Audits module to detect lease overcharges.")
+        empty_state("No findings detected", "Completed audits with violations will appear here.", "✓")
         return
 
     # -------------------------------------------------------------------------
     # Filters
     # -------------------------------------------------------------------------
-    st.markdown("### 🔍 Filter Findings")
+    section_header("Filter Findings", "Narrow the findings list by property, severity, category, or recovery status.")
     fcol1, fcol2, fcol3, fcol4 = st.columns(4)
 
     properties_list = ["All Properties"] + list(set(f.get("property_id", "Unknown") for f in findings_data))
@@ -68,7 +61,7 @@ def render():
     st.markdown(f"### 📋 Discrepancies Flagged ({len(filtered)})")
 
     if not filtered:
-        st.info("No findings match the selected filter criteria.")
+        empty_state("No matching findings", "Adjust the active filters to review another set of results.", "○")
         return
 
     for idx, f in enumerate(filtered):
@@ -77,6 +70,8 @@ def render():
         stat = f.get("status", "open")
         stat_color = "green" if stat == "Recovered" else ("purple" if stat == "Under Review" else "amber")
         amt = float(f.get("amount", 0.0))
+        billed = float(f.get("billed_amount", amt))
+        allowed = float(f.get("allowed_amount", 0.0))
 
         with st.container():
             st.markdown(
@@ -91,8 +86,11 @@ def render():
                     </div>
                     <div style="font-size: 0.9rem; color: #cbd5e1; margin-top: 0.5rem;">{f.get('description', '')}</div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; margin-top: 0.75rem; font-size: 0.85rem;">
+                        <div><strong style="color: #94a3b8;">Billed:</strong> <span style="color: #ffffff;">${billed:,.2f}</span></div>
+                        <div><strong style="color: #94a3b8;">Allowed:</strong> <span style="color: #ffffff;">${allowed:,.2f}</span></div>
                         <div><strong style="color: #94a3b8;">Potential Recovery:</strong> <span style="color: #34d399; font-weight: 700;">${amt:,.2f}</span></div>
                     </div>
+                    <div class="lg-evidence-box"><strong>Why this was flagged</strong><br>{f.get('description') or 'The billed amount did not align with the lease terms evaluated during the audit.'}</div>
                 </div>
                 """,
                 unsafe_allow_html=True

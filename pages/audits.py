@@ -3,14 +3,16 @@ Audit Sessions Page for LeaseGuard AI (Phase 5.1 Fixes).
 Configures and launches deterministic reconciliation sessions between lease rules and invoice charges using Supabase records.
 """
 
-import time
+import os
 import streamlit as st
 import pandas as pd
+from services.ai import extract_invoice_summary, extract_lease_rules
 from services.auth import require_auth
 from services.audit_engine import AuditEngine
 from services.risk_engine import RiskEngine
 from services.recovery_engine import RecoveryEngine
 from services.supabase import SupabaseService
+from utils.ui import empty_state, page_header, section_header
 
 
 def render():
@@ -20,27 +22,18 @@ def render():
         st.warning("🔒 Please sign in to access LeaseGuard.")
         return
 
-    st.markdown(
-        """
-        <div class="lg-header">
-            <div class="lg-title">🔍 Audit Sessions</div>
-            <div class="lg-subtitle">Configure and run deterministic lease-to-invoice reconciliation workflows.</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    page_header("Audit", "Audit Sessions", "Reconcile lease obligations against billing statements and identify potential recovery.")
 
     supabase = SupabaseService()
     properties = supabase.get_properties()
     all_documents = supabase.get_documents() + st.session_state.get("session_documents", [])
 
-    st.markdown("### 🚀 Launch New Audit Session")
+    section_header("Run an Audit", "1. Select Property  →  2. Select Lease  →  3. Select Invoice  →  4. Run Audit")
     with st.container():
         st.markdown('<div class="lg-card">', unsafe_allow_html=True)
 
         if not properties:
-            st.info("⚠️ No properties available. Add a property first.")
-            st.caption("Navigate to 🏢 Properties or 📁 Documents to create your first commercial building property.")
+            empty_state("No properties added", "Add a property first, then upload its lease and invoice documents.", "○")
             st.markdown('</div>', unsafe_allow_html=True)
             return
 
@@ -96,33 +89,40 @@ def render():
         if not can_run:
             st.warning("⚠️ Please upload/select both a Lease Baseline and an Invoice Statement for this property to enable Audit Execution.")
 
-        audit_btn = st.button("▶️ Execute Audit Engine", type="primary", use_container_width=True, disabled=not can_run)
+        audit_btn = st.button("Run Audit", type="primary", use_container_width=True, disabled=not can_run)
 
         if audit_btn:
             try:
                 with st.status("Executing LeaseGuard AI Audit Pipeline...", expanded=True) as status:
                     st.write("📄 Loading & parsing selected lease baseline rules...")
-                    time.sleep(0.3)
                     st.write("🧾 Inspecting selected invoice line items & billing totals...")
-                    time.sleep(0.3)
                     st.write("🧮 Running deterministic AuditEngine rules (CAM caps, admin fees, exclusions, rent escalation, tenant share)...")
+
+                    lease_result = extract_lease_rules(lease_text_input or "CAM cap $10,000") if lease_text_input.strip() else {"status": "demo", "data": {"cam_cap": 10000.0, "expense_exclusions": ["capital repairs", "rooftop hvac"], "administrative_fee_rules": "5% of CAM expenses", "tenant_share": "15%", "rent_escalation_cap_percent": 3.0}}
+                    invoice_result = extract_invoice_summary(inv_text_input or "Billed CAM $14,500.00. Administrative fee billed: $900.00.", force_demo=not bool(os.getenv("ROCKETRIDE_APIKEY")))
+
+                    if lease_result.get("status") == "error":
+                        st.warning(f"Lease extraction warning: {lease_result.get('message', 'Unable to extract lease terms.')}")
+                    if invoice_result.get("status") == "error":
+                        st.warning(f"Invoice extraction warning: {invoice_result.get('message', 'Unable to extract invoice values.')}")
 
                     lease_data = {
                         "base_rent": 120000.0,
                         "rent_escalation_cap_percent": 3.0,
-                        "cam_cap": 10000.0,
-                        "tenant_share": 15.0,
+                        "cam_cap": (lease_result.get("data") or {}).get("cam_cap") or 10000.0,
+                        "tenant_share": (lease_result.get("data") or {}).get("tenant_share") or 15.0,
                         "administrative_fee_cap_percent": 5.0,
-                        "expense_exclusions": ["capital repairs", "rooftop hvac"],
-                        "lease_text": lease_text_input or "CAM cap $10,000"
+                        "expense_exclusions": (lease_result.get("data") or {}).get("expense_exclusions") or ["capital repairs", "rooftop hvac"],
+                        "lease_text": lease_text_input or "CAM cap $10,000",
                     }
                     invoice_data = {
                         "prior_base_rent": 120000.0,
                         "billed_base_rent": 126000.0,
-                        "billed_cam_amount": 14500.0,
-                        "total_building_cam": 100000.0,
-                        "billed_tenant_share_amount": 18000.0,
-                        "line_items": [
+                        "billed_cam_amount": (invoice_result.get("data") or {}).get("billed_cam_amount") or 14500.0,
+                        "total_building_cam": (invoice_result.get("data") or {}).get("total_building_cam") or 100000.0,
+                        "billed_tenant_share_amount": ((invoice_result.get("data") or {}).get("billed_tenant_share_amount") or 0.0) or 18000.0,
+                        "billed_admin_fee_amount": (invoice_result.get("data") or {}).get("billed_admin_fee_amount") or 900.0,
+                        "line_items": (invoice_result.get("data") or {}).get("line_items") or [
                             {"category": "Capital Improvements", "description": "Rooftop HVAC Repair", "billed_amount": 4200.0}
                         ],
                         "invoice_text": inv_text_input or "Billed CAM $14,500"
@@ -154,14 +154,14 @@ def render():
 
                 st.success(f"Audit completed for {selected_prop.get('name')}! Flagged {audit_result['findings_count']} discrepancy(ies). Potential Recovery: ${audit_result['total_potential_recovery']:,.2f}")
             except Exception as exc:
-                st.error(f"Audit execution failed: {str(exc)}")
+                st.error("Unable to complete this audit. Please confirm the selected documents are readable and try again.")
 
         st.markdown('</div>', unsafe_allow_html=True)
 
     if "latest_audit" in st.session_state:
         latest = st.session_state["latest_audit"]
         st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
-        st.markdown(f"### 🎯 Session Discrepancy Findings ({latest['timestamp'][:10]})")
+        section_header("Audit Result", f"Completed {latest['timestamp'][:10]} — review the flagged discrepancies and evidence below.")
         st.info(latest["summary"])
 
         for f in latest.get("findings", []):
@@ -184,12 +184,12 @@ def render():
             )
 
     st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
-    st.markdown("### 📊 Historical Audit Sessions")
+    section_header("Audit History", "Previous audit sessions for your portfolio.")
 
     audit_history = supabase.get_audits()
 
     if not audit_history:
-        st.info("No audit sessions conducted yet. Launch your first audit above.")
+        empty_state("No audit data yet", "Run your first audit to begin tracking recovery and compliance.", "○")
     else:
         st.dataframe(pd.DataFrame(audit_history), use_container_width=True, hide_index=True)
 

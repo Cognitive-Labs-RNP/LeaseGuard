@@ -72,14 +72,50 @@ def login_user(email: str, password: str) -> Dict[str, Any]:
     return _user_to_dict(response.user)
 
 
+def login_demo_account() -> Dict[str, Any]:
+    """Authenticate the preconfigured demo account via Supabase Email/password login.
+    
+    This function reads DEMO_EMAIL and DEMO_PASSWORD from environment variables
+    and attempts to authenticate with Supabase using those credentials.
+    
+    Returns:
+        Dict with user info if successful.
+        
+    Raises:
+        ValueError: If demo credentials are not configured.
+        RuntimeError: If authentication fails.
+    """
+    demo_email = (os.getenv("DEMO_EMAIL") or "").strip()
+    demo_password = (os.getenv("DEMO_PASSWORD") or "").strip()
+
+    if not demo_email or not demo_password:
+        raise ValueError(
+            "Demo account credentials are not configured. "
+            "Add DEMO_EMAIL and DEMO_PASSWORD to your .env file."
+        )
+
+    try:
+        user = login_user(demo_email, demo_password)
+        return user
+    except Exception as exc:
+        raise RuntimeError(
+            "Demo account login failed. Ensure the demo account exists in Supabase "
+            "and credentials are correct in your .env file."
+        ) from exc
+
+
 def logout_user() -> None:
     """Log out the currently authenticated user from Supabase Auth."""
+    if (os.getenv("DEMO_MODE") or "").strip().lower() in {"1", "true", "yes", "on", "demo"}:
+        return
     client = get_supabase_client()
     client.auth.sign_out()
 
 
 def get_current_user() -> Optional[Dict[str, Any]]:
     """Return the current authenticated user dictionary or None."""
+    if (os.getenv("DEMO_MODE") or "").strip().lower() in {"1", "true", "yes", "on", "demo"}:
+        return {"id": "demo-user-001", "email": "demo@leaseguard.ai"}
     try:
         client = get_supabase_client()
         response = client.auth.get_user()

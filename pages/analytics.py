@@ -10,6 +10,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from services.auth import require_auth
 from services.supabase import SupabaseService
+from utils.ui import empty_state, page_header, section_header
 
 
 def _get_plotly_layout_defaults():
@@ -30,15 +31,7 @@ def render():
         st.warning("🔒 Please sign in to access LeaseGuard.")
         return
 
-    st.markdown(
-        """
-        <div class="lg-header">
-            <div class="lg-title">📈 Portfolio Analytics & Comparative Trends</div>
-            <div class="lg-subtitle">Cross-property benchmarking, historical metric tracking, and financial recovery analysis.</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    page_header("Insights", "Portfolio Analytics", "Compare recovery, findings, and risk performance across time and properties.")
 
     supabase = SupabaseService()
     properties = supabase.get_properties()
@@ -52,9 +45,9 @@ def render():
     # Tab 1: Historical Comparison
     # -------------------------------------------------------------------------
     with tab1:
-        st.markdown("### 📉 Historical Metric Comparison")
+        section_header("Historical Comparison", "Compare one property's performance over time.")
         if not properties:
-            st.info("No property data available yet. Add properties and conduct audits to track historical metrics.")
+            empty_state("No historical data yet", "Add properties and conduct audits to begin tracking performance over time.", "○")
         else:
             hcol1, hcol2, hcol3 = st.columns(3)
 
@@ -102,15 +95,15 @@ def render():
                 fig_hist.update_layout(**_get_plotly_layout_defaults(), title=f"Historical {sel_metric} Trend for {sel_hist_prop}", height=340)
                 st.plotly_chart(fig_hist, use_container_width=True)
             else:
-                st.info(f"No historical trend data available yet for {sel_hist_prop} under '{sel_metric}'.")
+                empty_state("No trend data for this selection", "Choose another metric or run additional audits for this property.", "○")
 
     # -------------------------------------------------------------------------
     # Tab 2: Multiple-Property Analytics
     # -------------------------------------------------------------------------
     with tab2:
-        st.markdown("### 🏢 Multiple-Property Side-by-Side Analytics")
+        section_header("Multi-Property Analytics", "Compare portfolio properties against each other.")
         if not properties:
-            st.info("No property data available for comparison yet.")
+            empty_state("No properties to compare", "Add properties and audit records to build a portfolio comparison.", "○")
         else:
             mcol1, mcol2 = st.columns(2)
             with mcol1:

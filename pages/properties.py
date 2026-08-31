@@ -9,6 +9,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from services.auth import require_auth
 from services.supabase import SupabaseService
+from utils.ui import empty_state, page_header, section_header
 
 
 def _get_plotly_layout_defaults():
@@ -29,15 +30,7 @@ def render():
         st.warning("🔒 Please sign in to access LeaseGuard.")
         return
 
-    st.markdown(
-        """
-        <div class="lg-header">
-            <div class="lg-title">🏢 Property Portfolio</div>
-            <div class="lg-subtitle">Inspect property-level lease terms, risk scores, documents, findings, and recovery metrics.</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    page_header("Portfolio", "Properties", "Inspect lease compliance, risk exposure, documents, and recovery at the property level.")
 
     supabase = SupabaseService()
     properties = supabase.get_properties()
@@ -76,7 +69,8 @@ def render():
         return
 
     prop_map = {f"{p.get('code', 'PROP')}: {p.get('name')}": p for p in properties}
-    selected_prop_label = st.selectbox("Select Property to Inspect", list(prop_map.keys()))
+    section_header("Property Overview", "Choose a property to review its audit and recovery profile.")
+    selected_prop_label = st.selectbox("Property", list(prop_map.keys()))
     prop = prop_map[selected_prop_label]
     prop_id = prop.get("id")
 
@@ -163,21 +157,21 @@ def render():
         if prop_docs:
             st.dataframe(pd.DataFrame(prop_docs), use_container_width=True, hide_index=True)
         else:
-            st.caption("No documents associated with this property yet.")
+            empty_state("No documents yet", "Upload a lease or billing document for this property to begin an audit.", "□")
 
     with tab_audits:
         st.markdown("### 🔍 Historical Audit Sessions")
         if prop_audits:
             st.dataframe(pd.DataFrame(prop_audits), use_container_width=True, hide_index=True)
         else:
-            st.caption("No audit sessions conducted for this property yet.")
+            empty_state("No audit data yet", "Run an audit for this property to begin measuring lease compliance.", "○")
 
     with tab_findings:
         st.markdown("### ⚠️ Property Discrepancies & Findings")
         if prop_findings:
             st.dataframe(pd.DataFrame(prop_findings), use_container_width=True, hide_index=True)
         else:
-            st.success("No active discrepancies flagged for this property.")
+            empty_state("No findings detected", "Completed audits with violations will appear here.", "✓")
 
     with tab_recovery:
         st.markdown("### 💰 Financial Recovery Progress")
@@ -195,7 +189,7 @@ def render():
             fig_trend.update_layout(**_get_plotly_layout_defaults(), title="Historical Risk Score Trend", height=280)
             st.plotly_chart(fig_trend, use_container_width=True)
         else:
-            st.caption("Insufficient historical data points to render risk score trend chart.")
+            empty_state("No historical trend yet", "Risk history appears after multiple audits for this property.", "↗")
 
 
 if __name__ == "__main__":

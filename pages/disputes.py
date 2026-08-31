@@ -7,6 +7,7 @@ import streamlit as st
 from services.auth import require_auth
 from services.ai import AIService
 from services.supabase import SupabaseService
+from utils.ui import empty_state, page_header, section_header
 
 
 def render():
@@ -16,15 +17,7 @@ def render():
         st.warning("🔒 Please sign in to access LeaseGuard.")
         return
 
-    st.markdown(
-        """
-        <div class="lg-header">
-            <div class="lg-title">✉️ Dispute Letter Generator</div>
-            <div class="lg-subtitle">Generate evidence-backed landlord dispute notices via AI with mandatory human review before export.</div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    page_header("Recovery", "Dispute Letter Generator", "Draft evidence-backed correspondence for human review before export.")
 
     supabase = SupabaseService()
     findings_list = supabase.get_findings()
@@ -35,10 +28,10 @@ def render():
             findings_list.insert(0, target_f)
 
     if not findings_list:
-        st.info("No discrepancy findings available for dispute generation. Run an audit in 🔍 Audits to flag lease overcharges first.")
+        empty_state("No findings available", "Run an audit first to identify a finding suitable for dispute review.", "○")
         return
 
-    st.markdown("### 📄 Step 1: Select Discrepancy Finding")
+    section_header("1. Select Finding", "Choose the audit discrepancy that will support this draft.")
 
     selected_idx = st.selectbox(
         "Target Discrepancy Finding",
@@ -54,7 +47,7 @@ def render():
     with col2:
         tenant_name = st.text_input("Tenant Entity Name", placeholder="e.g. Operations Tenant Inc.")
 
-    gen_btn = st.button("✨ Generate AI Dispute Letter", type="primary", use_container_width=True)
+    gen_btn = st.button("Generate Draft", type="primary", use_container_width=True)
 
     if gen_btn or "current_dispute_letter" not in st.session_state:
         ai_service = AIService()
@@ -72,11 +65,12 @@ def render():
             "lease_evidence": finding.get("lease_evidence", "Lease agreement terms"),
             "invoice_evidence": finding.get("invoice_evidence", "Billed invoice statement")
         }
-        letter_text = ai_service.generate_dispute_letter(finding_payload, ctx)
+        with st.spinner("Preparing the dispute draft..."):
+            letter_text = ai_service.generate_dispute_letter(finding_payload, ctx)
         st.session_state["current_dispute_letter"] = letter_text
 
     st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
-    st.markdown("### ✏️ Step 2: Human Review & Edit (Mandatory)")
+    section_header("2. Human Review & Edit (Mandatory)", "AI does not send correspondence. Review and edit this draft before export.")
     st.caption("Review and edit the generated dispute notice prior to formal export.")
 
     edited_letter = st.text_area(
@@ -85,7 +79,7 @@ def render():
         height=380
     )
 
-    st.markdown("### 📥 Step 3: Export & Download")
+    section_header("3. Export", "Download the reviewed draft for your legal or finance workflow.")
     dcol1, dcol2 = st.columns(2)
     with dcol1:
         st.download_button(

@@ -2,9 +2,11 @@
 LeaseGuard AI - Main Application Entry Point.
 Commercial Lease Auditing & Financial Recovery Platform.
 """
+from typing import Optional
+
 import streamlit as st
 from utils.css_loader import load_css
-from services.auth import get_current_user, login_user, logout_user, register_user
+from services.auth import login_user, login_demo_account, logout_user, register_user
 
 # --- Page Configuration ---
 st.set_page_config(
@@ -33,58 +35,106 @@ from pages import (
 
 # Navigation Mapping
 PAGES = {
-    "📊 Dashboard": dashboard.render,
-    "🏢 Properties": properties.render,
-    "📁 Documents": documents.render,
-    "🔍 Audits": audits.render,
-    "⚠️ Findings": findings.render,
-    "🛡️ Risk Analysis": risk.render,
-    "💰 Recovery": recovery.render,
-    "✉️ Disputes": disputes.render,
-    "📈 Analytics": analytics.render,
-    "⚙️ Settings": settings.render,
+    "Dashboard": dashboard.render,
+    "Properties": properties.render,
+    "Documents": documents.render,
+    "Audits": audits.render,
+    "Findings": findings.render,
+    "Risk Analysis": risk.render,
+    "Recovery": recovery.render,
+    "Disputes": disputes.render,
+    "Analytics": analytics.render,
+    "Settings": settings.render,
+}
+
+NAVIGATION_GROUPS = {
+    "Overview": ["Dashboard"],
+    "Portfolio": ["Properties", "Documents"],
+    "Audit": ["Audits", "Findings", "Risk Analysis"],
+    "Recovery": ["Recovery", "Disputes"],
+    "Insights": ["Analytics"],
+    "System": ["Settings"],
 }
 
 
+def _set_active_page(group: str) -> None:
+    """Keep grouped sidebar radios acting as a single navigation control."""
+    source_key = f"nav_{group.lower().replace(' ', '_')}"
+    selected = st.session_state.get(source_key)
+    if selected:
+        st.session_state["active_page"] = selected
+        for other_group in NAVIGATION_GROUPS:
+            other_key = f"nav_{other_group.lower().replace(' ', '_')}"
+            if other_key != source_key:
+                st.session_state[other_key] = None
+
+
 def render_auth_screen():
-    """Display simple login/register UI for unauthenticated users."""
-    st.title("LeaseGuard AI")
-    st.caption("AI-Powered Lease Auditing & Financial Recovery")
+    """Render the standalone, unprotected authentication experience."""
+    st.markdown(
+        """
+        <div class="lg-auth-brand">
+            <div class="lg-auth-mark">LG</div>
+            <div class="lg-auth-product">LeaseGuard <span>AI</span></div>
+            <div class="lg-auth-tagline">Lease intelligence. Financial protection.</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    _, auth_column, _ = st.columns([1, 0.72, 1])
+    with auth_column:
+        with st.container(key="auth_card"):
+            login_tab, register_tab = st.tabs(["Sign In", "Create Account"])
 
-    login_tab, register_tab = st.tabs(["Login", "Register"])
+            with login_tab:
+                st.markdown("<div class='lg-auth-card-title'>Welcome back</div><div class='lg-auth-card-copy'>Sign in to your LeaseGuard account.</div>", unsafe_allow_html=True)
+                email = st.text_input("Email address", key="auth_login_email", placeholder="name@company.com")
+                password = st.text_input("Password", type="password", key="auth_login_password")
 
-    with login_tab:
-        email = st.text_input("Email", key="auth_login_email")
-        password = st.text_input("Password", type="password", key="auth_login_password")
+                if st.button("Sign In", use_container_width=True, type="primary"):
+                    try:
+                        user = login_user(email, password)
+                        st.session_state["authenticated_user"] = user
+                        st.session_state["user_id"] = user.get("id")
+                        st.rerun()
+                    except Exception:  # pragma: no cover - UI path
+                        st.error("Sign-in failed. Check your email and password, then try again.")
 
-        if st.button("Login", use_container_width=True, type="primary"):
+            with register_tab:
+                st.markdown("<div class='lg-auth-card-title'>Create your account</div><div class='lg-auth-card-copy'>Start reviewing lease compliance with LeaseGuard.</div>", unsafe_allow_html=True)
+                reg_email = st.text_input("Email address", key="auth_register_email", placeholder="name@company.com")
+                reg_password = st.text_input("Password", type="password", key="auth_register_password")
+                reg_confirm = st.text_input("Confirm password", type="password", key="auth_register_confirm")
+
+                if st.button("Create Account", use_container_width=True, type="primary"):
+                    if reg_password != reg_confirm:
+                        st.error("Passwords do not match. Please enter them again.")
+                    else:
+                        try:
+                            user = register_user(reg_email, reg_password)
+                            st.session_state["authenticated_user"] = user
+                            st.session_state["user_id"] = user.get("id")
+                            st.success("Account created successfully. Check your email to confirm the account before signing in.")
+                        except Exception:  # pragma: no cover - UI path
+                            st.error("Account creation failed. Please check your email and password and try again.")
+
+        # --- Demo Account Section ---
+        st.markdown("<div style='margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #334155;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align: center; font-size: 0.85rem; color: #64748b; margin-bottom: 1rem;'>Try before signing up</div>", unsafe_allow_html=True)
+
+        if st.button("✨ Explore Demo Workspace", use_container_width=True, key="demo_account_btn"):
             try:
-                user = login_user(email, password)
+                user = login_demo_account()
                 st.session_state["authenticated_user"] = user
                 st.session_state["user_id"] = user.get("id")
-                st.success("Login successful.")
+                st.success("Demo workspace loaded. Explore the complete LeaseGuard platform.")
                 st.rerun()
-            except Exception as exc:  # pragma: no cover - UI path
-                st.error(str(exc))
+            except ValueError as ve:
+                st.info(f"ℹ️ Demo access is not configured on this deployment.")
+            except RuntimeError as re:
+                st.error("Unable to start the demo account. Please try again or sign up for an account.")
 
-    with register_tab:
-        reg_email = st.text_input("Email", key="auth_register_email")
-        reg_password = st.text_input("Password", type="password", key="auth_register_password")
-        reg_confirm = st.text_input("Confirm Password", type="password", key="auth_register_confirm")
-
-        if st.button("Register", use_container_width=True):
-            if reg_password != reg_confirm:
-                st.error("Passwords do not match.")
-            else:
-                try:
-                    user = register_user(reg_email, reg_password)
-                    st.session_state["authenticated_user"] = user
-                    st.session_state["user_id"] = user.get("id")
-                    st.success("Registration successful. Please check your email to confirm the account.")
-                    st.rerun()
-                except Exception as exc:  # pragma: no cover - UI path
-                    st.error(str(exc))
-
+    st.markdown("<div class='lg-auth-footer'>Secure enterprise lease intelligence</div>", unsafe_allow_html=True)
 
 def render_sidebar(current_user: Optional[dict]) -> Optional[str]:
     """Render the application sidebar and navigation selector based on auth state."""
@@ -103,34 +153,41 @@ def render_sidebar(current_user: Optional[dict]) -> Optional[str]:
             unsafe_allow_html=True,
         )
 
-        if not current_user:
-            st.info("🔒 Please sign in to access LeaseGuard AI.")
-            selected_page = None
-        else:
-            st.caption(f"Signed in as: {current_user.get('email', 'User')}")
-            if st.button("🚪 Logout", use_container_width=True):
-                try:
-                    logout_user()
-                except Exception:
-                    pass
-                st.session_state.clear()
-                st.rerun()
+        st.markdown("<div class='sidebar-user-label'>ACCOUNT</div>", unsafe_allow_html=True)
+        st.caption(current_user.get("email", "Signed-in user"))
+        if st.button("Logout", use_container_width=True):
+            try:
+                logout_user()
+            except Exception:
+                pass
+            st.session_state.clear()
+            st.rerun()
 
-            st.markdown('<div class="sidebar-section-title">Navigation</div>', unsafe_allow_html=True)
-            selected_page = st.radio(
-                "Go to",
-                list(PAGES.keys()),
+        active_page = st.session_state.get("active_page", "Dashboard")
+        for group, page_names in NAVIGATION_GROUPS.items():
+            st.markdown(f'<div class="sidebar-section-title">{group}</div>', unsafe_allow_html=True)
+            selection = st.radio(
+                group,
+                page_names,
+                index=page_names.index(active_page) if active_page in page_names else None,
+                key=f"nav_{group.lower().replace(' ', '_')}",
                 label_visibility="collapsed",
+                on_change=_set_active_page,
+                args=(group,),
             )
+            if selection:
+                active_page = selection
+        st.session_state["active_page"] = active_page
+        selected_page = active_page
 
         st.markdown("---")
         st.markdown('<div class="sidebar-section-title">System Status</div>', unsafe_allow_html=True)
         st.markdown(
             """
-            <div style="font-size: 0.8rem; line-height: 1.8; color: #475569;">
-                <div><span class="lg-status-dot lg-dot-green"></span> Engine: <strong style="color: #0f172a;">Online</strong></div>
-                <div><span class="lg-status-dot lg-dot-green"></span> Database: <strong style="color: #0f172a;">Supabase Auth active</strong></div>
-                <div><span class="lg-status-dot lg-dot-green"></span> AI Pipelines: <strong style="color: #0f172a;">RocketRide Active</strong></div>
+            <div style="font-size: 0.8rem; line-height: 1.8; color: #94a3b8;">
+                <div><span class="lg-status-dot lg-dot-green"></span> Engine: <strong style="color: #e2e8f0;">Online</strong></div>
+                <div><span class="lg-status-dot lg-dot-green"></span> Database: <strong style="color: #e2e8f0;">Supabase Auth active</strong></div>
+                <div><span class="lg-status-dot lg-dot-green"></span> AI Pipelines: <strong style="color: #e2e8f0;">Available</strong></div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -155,12 +212,11 @@ def main():
     from services.auth import require_auth
     current_user = require_auth()
 
-    selected_page_key = render_sidebar(current_user)
-
     if not current_user:
-        st.warning("🔒 Please sign in to access LeaseGuard.")
         render_auth_screen()
         return
+
+    selected_page_key = render_sidebar(current_user)
 
     render_func = PAGES.get(selected_page_key, dashboard.render)
     render_func()
