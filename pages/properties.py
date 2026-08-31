@@ -48,19 +48,25 @@ def render():
 
             create_submit = st.form_submit_button("Save Property", type="primary", use_container_width=True)
             if create_submit:
-                if p_name:
-                    new_prop_payload = {
-                        "name": p_name,
-                        "code": p_code or f"PROP-{len(properties)+1:03d}",
-                        "address": p_address or "N/A",
-                        "square_feet": float(p_sqft),
-                        "status": "Active"
-                    }
-                    supabase.create_property(new_prop_payload)
-                    st.success(f"Property '{p_name}' added successfully!")
-                    st.rerun()
-                else:
+                if not p_name or not p_name.strip():
                     st.error("Property name is required.")
+                else:
+                    try:
+                        new_prop_payload = {
+                            "name": p_name.strip(),
+                            "property_code": (p_code or "").strip() or f"PROP-{len(properties)+1:03d}",
+                            "address": (p_address or "").strip() or "N/A",
+                            "square_footage": float(p_sqft),
+                            "status": "Active"
+                        }
+                        saved = supabase.create_property(new_prop_payload)
+                        if saved:
+                            st.success(f"Property '{p_name}' added successfully!")
+                            st.rerun()
+                        else:
+                            st.error("Failed to add property. Database record creation was unsuccessful.")
+                    except Exception as exc:
+                        st.error(f"Failed to add property: {str(exc)}")
 
     st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
 

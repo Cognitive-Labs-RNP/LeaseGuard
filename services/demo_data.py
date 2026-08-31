@@ -186,9 +186,21 @@ DEMO_DOCUMENTS = [
 def is_demo_mode() -> bool:
     """Return True when the app has been explicitly switched into demo mode."""
     import os
-
     value = (os.getenv("DEMO_MODE") or "").strip().lower()
-    return value in {"1", "true", "yes", "on", "demo"} or (os.getenv("APP_ENV") or "").strip().lower() == "demo"
+    if value in {"1", "true", "yes", "on", "demo"} or (os.getenv("APP_ENV") or "").strip().lower() == "demo":
+        return True
+
+    try:
+        import streamlit as st
+        user = st.session_state.get("authenticated_user") or {}
+        user_id = st.session_state.get("user_id") or user.get("id")
+        if user_id == "demo-user-001":
+            return True
+    except Exception:
+        pass
+
+    return False
+
 
 
 def get_demo_app_records() -> Dict[str, List[Dict[str, Any]]]:

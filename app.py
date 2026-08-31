@@ -96,9 +96,15 @@ def render_auth_screen():
                         user = login_user(email, password)
                         st.session_state["authenticated_user"] = user
                         st.session_state["user_id"] = user.get("id")
+                        if user.get("access_token"):
+                            st.session_state["access_token"] = user.get("access_token")
+                        if user.get("refresh_token"):
+                            st.session_state["refresh_token"] = user.get("refresh_token")
                         st.rerun()
-                    except Exception:  # pragma: no cover - UI path
-                        st.error("Sign-in failed. Check your email and password, then try again.")
+                    except (ValueError, RuntimeError) as e:
+                        st.error(str(e))
+                    except Exception as e:
+                        st.error(f"Sign-in failed: {str(e)}")
 
             with register_tab:
                 st.markdown("<div class='lg-auth-card-title'>Create your account</div><div class='lg-auth-card-copy'>Start reviewing lease compliance with LeaseGuard.</div>", unsafe_allow_html=True)
@@ -111,12 +117,23 @@ def render_auth_screen():
                         st.error("Passwords do not match. Please enter them again.")
                     else:
                         try:
-                            user = register_user(reg_email, reg_password)
-                            st.session_state["authenticated_user"] = user
-                            st.session_state["user_id"] = user.get("id")
-                            st.success("Account created successfully. Check your email to confirm the account before signing in.")
-                        except Exception:  # pragma: no cover - UI path
-                            st.error("Account creation failed. Please check your email and password and try again.")
+                            result = register_user(reg_email, reg_password)
+                            if result.get("requires_confirmation"):
+                                st.info("Account created. Please check your email and confirm your account before logging in.")
+                            else:
+                                user = result.get("user") or result
+                                st.session_state["authenticated_user"] = user
+                                st.session_state["user_id"] = user.get("id")
+                                if result.get("access_token"):
+                                    st.session_state["access_token"] = result.get("access_token")
+                                if result.get("refresh_token"):
+                                    st.session_state["refresh_token"] = result.get("refresh_token")
+                                st.success("Account created successfully.")
+                                st.rerun()
+                        except (ValueError, RuntimeError) as e:
+                            st.error(str(e))
+                        except Exception as e:
+                            st.error(f"Account creation failed: {str(e)}")
 
         # --- Demo Account Section ---
         st.markdown("<div style='margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #334155;'></div>", unsafe_allow_html=True)
@@ -127,6 +144,8 @@ def render_auth_screen():
                 user = login_demo_account()
                 st.session_state["authenticated_user"] = user
                 st.session_state["user_id"] = user.get("id")
+                st.session_state["access_token"] = user.get("access_token", "demo-access-token")
+                st.session_state["refresh_token"] = user.get("refresh_token", "demo-refresh-token")
                 st.success("Demo workspace loaded. Explore the complete LeaseGuard platform.")
                 st.rerun()
             except ValueError as ve:
