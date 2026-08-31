@@ -28,19 +28,21 @@ from pages import (
     recovery,
     disputes,
     analytics,
+    settings,
 )
 
 # Navigation Mapping
 PAGES = {
     "📊 Dashboard": dashboard.render,
-    "🏢 Property Portfolio": properties.render,
-    "📁 Document Vault": documents.render,
-    "🔍 Audit Sessions": audits.render,
-    "⚠️ Findings & Overcharges": findings.render,
+    "🏢 Properties": properties.render,
+    "📁 Documents": documents.render,
+    "🔍 Audits": audits.render,
+    "⚠️ Findings": findings.render,
     "🛡️ Risk Analysis": risk.render,
-    "💰 Recovery Tracker": recovery.render,
-    "✉️ Dispute Letters": disputes.render,
-    "📈 Analytics & Trends": analytics.render,
+    "💰 Recovery": recovery.render,
+    "✉️ Disputes": disputes.render,
+    "📈 Analytics": analytics.render,
+    "⚙️ Settings": settings.render,
 }
 
 
@@ -84,8 +86,8 @@ def render_auth_screen():
                     st.error(str(exc))
 
 
-def render_sidebar() -> str:
-    """Render the application sidebar and navigation selector."""
+def render_sidebar(current_user: Optional[dict]) -> Optional[str]:
+    """Render the application sidebar and navigation selector based on auth state."""
     with st.sidebar:
         st.markdown(
             """
@@ -101,21 +103,25 @@ def render_sidebar() -> str:
             unsafe_allow_html=True,
         )
 
-        current_user = st.session_state.get("authenticated_user") or get_current_user()
-        if current_user:
+        if not current_user:
+            st.info("🔒 Please sign in to access LeaseGuard AI.")
+            selected_page = None
+        else:
             st.caption(f"Signed in as: {current_user.get('email', 'User')}")
-            if st.button("Logout", use_container_width=True):
-                logout_user()
-                st.session_state.pop("authenticated_user", None)
-                st.session_state.pop("user_id", None)
+            if st.button("🚪 Logout", use_container_width=True):
+                try:
+                    logout_user()
+                except Exception:
+                    pass
+                st.session_state.clear()
                 st.rerun()
 
-        st.markdown('<div class="sidebar-section-title">Navigation</div>', unsafe_allow_html=True)
-        selected_page = st.radio(
-            "Go to",
-            list(PAGES.keys()),
-            label_visibility="collapsed",
-        )
+            st.markdown('<div class="sidebar-section-title">Navigation</div>', unsafe_allow_html=True)
+            selected_page = st.radio(
+                "Go to",
+                list(PAGES.keys()),
+                label_visibility="collapsed",
+            )
 
         st.markdown("---")
         st.markdown('<div class="sidebar-section-title">System Status</div>', unsafe_allow_html=True)
@@ -133,33 +139,33 @@ def render_sidebar() -> str:
         st.markdown(
             """
             <div class="sidebar-footer-box">
-                <strong>LeaseGuard AI v0.3</strong><br>
-                24-Hour Hackathon Build<br>
-                <span style="color: #2563eb; font-weight: 600;">Phase 3: RocketRide AI Pipeline</span>
+                <strong>LeaseGuard AI v1.0</strong><br>
+                Commercial Lease Auditing Platform<br>
+                <span style="color: #38bdf8; font-weight: 600;">Phase 5: Enterprise UI & Analytics</span>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-
     return selected_page
 
 
 def main():
-    """Main routing controller."""
-    current_user = st.session_state.get("authenticated_user") or get_current_user()
+    """Main routing controller enforcing global authentication protection."""
+    from services.auth import require_auth
+    current_user = require_auth()
+
+    selected_page_key = render_sidebar(current_user)
 
     if not current_user:
+        st.warning("🔒 Please sign in to access LeaseGuard.")
         render_auth_screen()
         return
 
-    st.session_state["authenticated_user"] = current_user
-    st.session_state["user_id"] = current_user.get("id")
-
-    selected_page_key = render_sidebar()
     render_func = PAGES.get(selected_page_key, dashboard.render)
     render_func()
 
 
 if __name__ == "__main__":
     main()
+

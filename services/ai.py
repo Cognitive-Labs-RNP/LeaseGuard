@@ -3,6 +3,7 @@ LeaseGuard AI - AI Pipeline Service (Phase 3).
 Orchestrates RocketRide Cloud pipelines with Gemini Primary and Groq Fallback LLM execution.
 """
 import asyncio
+import datetime
 import json
 import logging
 import os
@@ -149,17 +150,16 @@ async def _run_rocketride_extraction(pipe_filepath: str, text: str, env_vars: di
 
 
 def _run_async(coro):
-    """Run an async coroutine synchronously, handling running loops if needed."""
+    """Run an async coroutine synchronously, handling running loops safely."""
+    import concurrent.futures
     try:
         loop = asyncio.get_running_loop()
     except RuntimeError:
         loop = None
 
     if loop and loop.is_running():
-        # Handle environment with pre-existing event loop if any
-        import nest_asyncio
-        nest_asyncio.apply()
-        return loop.run_until_complete(coro)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            return executor.submit(lambda: asyncio.run(coro)).result()
     else:
         return asyncio.run(coro)
 
@@ -312,6 +312,81 @@ class AIService:
             "message": "Invoice extraction pipeline will be implemented in a future phase."
         }
 
-    def generate_dispute_letter(self, finding_id: str, context: Dict[str, Any]) -> str:
-        """Placeholder for Phase 4."""
-        return "Dispute letter generation will be implemented in a future phase."
+    def generate_dispute_letter(self, finding_data: Dict[str, Any], context: Optional[Dict[str, Any]] = None) -> str:
+        """
+        Generate a formal, evidence-backed landlord dispute letter for an identified lease overcharge.
+
+        Args:
+            finding_data: Dictionary containing discrepancy details (category, billed_amount, allowed_amount, potential_recovery, explanation, lease_evidence, invoice_evidence).
+            context: Additional metadata (property_name, landlord_name, tenant_name, date).
+
+        Returns:
+            str: Full text of the generated dispute letter.
+        """
+        context = context or {}
+        date_str = context.get("date") or datetime.date.today().strftime("%B %d, %Y")
+        property_name = context.get("property_name") or "Commercial Property"
+        landlord_name = context.get("landlord_name") or "Landlord Entity"
+        tenant_name = context.get("tenant_name") or "Tenant Entity"
+
+        category = finding_data.get("category", "Lease Overcharge Discrepancy")
+        billed = finding_data.get("billed_amount", 0.0)
+        allowed = finding_data.get("allowed_amount", 0.0)
+        recovery = finding_data.get("potential_recovery", 0.0)
+        explanation = finding_data.get("explanation", "")
+        lease_ev = finding_data.get("lease_evidence", "Per lease contract terms.")
+        invoice_ev = finding_data.get("invoice_evidence", "Per billing statement.")
+
+        letter = f"""FORMAL NOTICE OF LEASE AUDIT DISCREPANCY & DISPUTE CLAIM
+
+DATE: {date_str}
+
+TO:
+{landlord_name}
+Attn: Property Management & Billing Department
+Re: Commercial Lease Agreement Audit - {property_name}
+
+FROM:
+{tenant_name}
+Corporate Lease Audit & Financial Operations
+
+SUBJECT: NOTICE OF BILLING DISCREPANCY & RECOVERY CLAIM - {category.upper()} (${recovery:,.2f})
+
+Dear Landlord Management Team,
+
+This letter serves as formal written notice regarding an identified billing discrepancy resulting from our recent annual commercial lease audit for {property_name}.
+
+EXECUTIVE SUMMARY OF AUDIT FINDINGS:
+--------------------------------------------------------------------------------
+Discrepancy Category : {category}
+Total Billed Amount  : ${billed:,.2f}
+Contractual Limit    : ${allowed:,.2f}
+Disputed Overcharge  : ${recovery:,.2f}
+--------------------------------------------------------------------------------
+
+DETAILED DISCREPANCY ANALYSIS:
+{explanation}
+
+CONTRACTUAL LEASE EVIDENCE:
+"{lease_ev}"
+
+INVOICE BILLING EVIDENCE:
+"{invoice_ev}"
+
+MATHEMATICAL CALCULATION BREAKDOWN:
+- Contractual Maximum Allowable Charge : ${allowed:,.2f}
+- Actual Amount Invoiced & Paid       : ${billed:,.2f}
+- Disputed Net Overcharge Amount      : ${recovery:,.2f}
+
+DEMAND FOR ACTION & CREDIT ADJUSTMENT:
+Based on the explicit provisions of our governing lease agreement, we respectfully request that your accounting department review this discrepancy and issue a formal rent credit or refund in the amount of ${recovery:,.2f} within thirty (30) business days of receipt of this notice.
+
+Additionally, please provide itemized line-item accounting ledgers for our records.
+
+Sincerely,
+
+Lease Audit Team
+{tenant_name}
+Confidential & Proprietary Commercial Audit Operations
+"""
+        return letter

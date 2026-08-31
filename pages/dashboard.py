@@ -1,159 +1,355 @@
 """
-Executive Dashboard Page for LeaseGuard AI.
-Provides portfolio overview, audit highlights, and financial recovery metrics.
+Dashboard Page for LeaseGuard AI (Phase 5 Cleanup).
+Enterprise SaaS Overview Dashboard connected dynamically to Supabase records with zero-state support.
 """
+
 import streamlit as st
 import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+from services.auth import require_auth
+from services.supabase import SupabaseService
+
+
+def _get_plotly_layout_defaults():
+    """Return dark indie-premium theme styling defaults for Plotly charts."""
+    return dict(
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#94a3b8", family="Plus Jakarta Sans"),
+        margin=dict(l=20, r=20, t=40, b=20),
+        xaxis=dict(gridcolor="rgba(255,255,255,0.06)", showgrid=True),
+        yaxis=dict(gridcolor="rgba(255,255,255,0.06)", showgrid=True),
+    )
 
 
 def render():
-    """Render the Executive Dashboard view."""
+    """Render main SaaS portfolio dashboard."""
+    user = require_auth()
+    if not user:
+        st.warning("🔒 Please sign in to access LeaseGuard.")
+        return
+
     st.markdown(
         """
         <div class="lg-header">
-            <div class="lg-title">🛡️ Executive Dashboard</div>
-            <div class="lg-subtitle">Real-time lease auditing overview, recovery pipeline, and property portfolio metrics.</div>
+            <div class="lg-title">📊 Executive Dashboard</div>
+            <div class="lg-subtitle">Portfolio-wide commercial lease auditing & financial recovery intelligence.</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    # --- Top KPI Summary Cards ---
-    col1, col2, col3, col4 = st.columns(4)
+    supabase = SupabaseService()
+    properties = supabase.get_properties()
+    audits = supabase.get_audits()
+    findings = supabase.get_findings()
+    risk_scores = supabase.get_risk_scores()
+    recovery_records = supabase.get_recovery_records()
 
+    # Calculate real KPI metrics
+    total_properties = len(properties)
+    total_audits = len(audits)
+    total_findings = len(findings)
+
+    potential_rec = sum(float(f.get("amount", 0.0)) for f in findings)
+    if not potential_rec and recovery_records:
+        potential_rec = sum(float(r.get("claim_amount", 0.0)) for r in recovery_records)
+
+    recovered_amt = sum(float(r.get("recovered_amount", 0.0)) for r in recovery_records)
+
+    # -------------------------------------------------------------------------
+    # 1. Portfolio KPIs
+    # -------------------------------------------------------------------------
+    col1, col2, col3, col4, col5 = st.columns(5)
     with col1:
         st.markdown(
-            """
+            f"""
             <div class="lg-metric-card">
-                <div class="lg-metric-label">Properties Monitored</div>
-                <div class="lg-metric-value">14</div>
-                <div class="lg-metric-trend lg-trend-neutral">Across 4 regions</div>
+                <div class="lg-metric-label">Total Properties</div>
+                <div class="lg-metric-value">{total_properties}</div>
+                <div class="lg-metric-trend lg-trend-neutral">Active Portfolio</div>
             </div>
             """,
-            unsafe_allow_html=True,
+            unsafe_allow_html=True
         )
-
     with col2:
         st.markdown(
-            """
+            f"""
             <div class="lg-metric-card purple">
-                <div class="lg-metric-label">Documents Ingested</div>
-                <div class="lg-metric-value">128</div>
-                <div class="lg-metric-trend lg-trend-neutral">42 Leases · 86 Invoices</div>
+                <div class="lg-metric-label">Total Audits</div>
+                <div class="lg-metric-value">{total_audits}</div>
+                <div class="lg-metric-trend lg-trend-up">Sessions Completed</div>
             </div>
             """,
-            unsafe_allow_html=True,
+            unsafe_allow_html=True
         )
-
     with col3:
         st.markdown(
-            """
+            f"""
             <div class="lg-metric-card danger">
-                <div class="lg-metric-label">Identified Overcharges</div>
-                <div class="lg-metric-value">$184,250</div>
-                <div class="lg-metric-trend lg-trend-up">↑ 23 Discrepancies flagged</div>
+                <div class="lg-metric-label">Total Findings</div>
+                <div class="lg-metric-value">{total_findings}</div>
+                <div class="lg-metric-trend lg-trend-down">Discrepancies Flagged</div>
             </div>
             """,
-            unsafe_allow_html=True,
+            unsafe_allow_html=True
         )
-
     with col4:
         st.markdown(
-            """
-            <div class="lg-metric-card success">
-                <div class="lg-metric-label">Recovered to Date</div>
-                <div class="lg-metric-value">$62,400</div>
-                <div class="lg-metric-trend lg-trend-up">33.8% Recovery rate</div>
+            f"""
+            <div class="lg-metric-card warning">
+                <div class="lg-metric-label">Potential Recovery</div>
+                <div class="lg-metric-value">${potential_rec:,.2f}</div>
+                <div class="lg-metric-trend lg-trend-neutral">Identified Claims</div>
             </div>
             """,
-            unsafe_allow_html=True,
+            unsafe_allow_html=True
         )
-
-    st.markdown("<div style='height: 1.5rem;'></div>", unsafe_allow_html=True)
-
-    # --- Main Content Split ---
-    left_col, right_col = st.columns([2, 1])
-
-    with left_col:
-        st.markdown("### 📋 Recent Audit Activity")
-        st.caption("Latest reconciliation runs between lease agreements and utility/CAM billing.")
-
-        # Sample placeholder table for UI layout
-        recent_audits = pd.DataFrame(
-            [
-                {
-                    "Audit ID": "AUD-2026-001",
-                    "Property": "Skyline Tower - Suite 400",
-                    "Period": "Q1 2026",
-                    "Status": "Discrepancy Found",
-                    "Variance": "$14,820",
-                },
-                {
-                    "Audit ID": "AUD-2026-002",
-                    "Property": "Apex Logistics Hub",
-                    "Period": "Jan 2026",
-                    "Status": "Passed",
-                    "Variance": "$0.00",
-                },
-                {
-                    "Audit ID": "AUD-2026-003",
-                    "Property": "Harbor Plaza - Retail B",
-                    "Period": "Feb 2026",
-                    "Status": "CAM Cap Exceeded",
-                    "Variance": "$8,450",
-                },
-                {
-                    "Audit ID": "AUD-2026-004",
-                    "Property": "Beacon Medical Center",
-                    "Period": "2025 Reconciliation",
-                    "Status": "Under Review",
-                    "Variance": "$31,200",
-                },
-            ]
-        )
-        st.dataframe(recent_audits, use_container_width=True, hide_index=True)
-
-        st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
-        st.markdown("### ⚡ Quick Navigation")
-        qcol1, qcol2, qcol3 = st.columns(3)
-        with qcol1:
-            st.button("📄 Upload Documents", use_container_width=True)
-        with qcol2:
-            st.button("🔍 Run New Audit", use_container_width=True)
-        with qcol3:
-            st.button("✉️ Draft Dispute Letter", use_container_width=True)
-
-    with right_col:
-        st.markdown("### ⚙️ System Status")
+    with col5:
         st.markdown(
-            """
+            f"""
+            <div class="lg-metric-card success">
+                <div class="lg-metric-label">Recovered Amount</div>
+                <div class="lg-metric-value">${recovered_amt:,.2f}</div>
+                <div class="lg-metric-trend lg-trend-up">Settled Credits</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
+
+    # -------------------------------------------------------------------------
+    # 2. Portfolio Risk & Recovery Tracking Summary Row
+    # -------------------------------------------------------------------------
+    rcol1, rcol2 = st.columns([1, 1])
+
+    # Compute risk score summary
+    if risk_scores:
+        scores_list = [float(rs.get("score", 0)) for rs in risk_scores]
+        avg_risk = round(sum(scores_list) / len(scores_list), 1)
+        high_risk_cnt = sum(1 for s in scores_list if s >= 70)
+        med_risk_cnt = sum(1 for s in scores_list if 30 <= s < 70)
+        low_risk_cnt = sum(1 for s in scores_list if s < 30)
+    else:
+        avg_risk = 0.0
+        high_risk_cnt, med_risk_cnt, low_risk_cnt = 0, 0, 0
+
+    risk_badge = "High Exposure" if avg_risk >= 70 else ("Moderate Exposure" if avg_risk >= 30 else "Low Risk")
+    risk_color_cls = "lg-badge-red" if avg_risk >= 70 else ("lg-badge-amber" if avg_risk >= 30 else "lg-badge-green")
+
+    with rcol1:
+        st.markdown(
+            f"""
             <div class="lg-card">
-                <div style="margin-bottom: 0.75rem;">
-                    <div style="font-weight: 600; font-size: 0.85rem;">UI Scaffolding</div>
-                    <span class="lg-badge lg-badge-green"><span class="lg-status-dot lg-dot-green"></span> Operational (Phase 1)</span>
+                <div style="font-weight: 700; font-size: 1.1rem; color: #ffffff; margin-bottom: 0.75rem;">
+                    🛡️ Portfolio Risk Breakdown
                 </div>
-                <div style="margin-bottom: 0.75rem;">
-                    <div style="font-weight: 600; font-size: 0.85rem;">Supabase Database</div>
-                    <span class="lg-badge lg-badge-amber"><span class="lg-status-dot lg-dot-yellow"></span> Ready for Configuration</span>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                    <div>
+                        <div style="font-size: 0.8rem; color: #94a3b8;">Average Portfolio Score</div>
+                        <div style="font-size: 2.2rem; font-weight: 800; color: #fbbf24;">{avg_risk if risk_scores else '0'} <span style="font-size: 1rem; color: #64748b;">/ 100</span></div>
+                    </div>
+                    <div>
+                        <span class="lg-badge {risk_color_cls}">{risk_badge if risk_scores else 'Unassessed'}</span>
+                    </div>
                 </div>
-                <div style="margin-bottom: 0.75rem;">
-                    <div style="font-weight: 600; font-size: 0.85rem;">RocketRide / Gemini AI</div>
-                    <span class="lg-badge lg-badge-amber"><span class="lg-status-dot lg-dot-yellow"></span> Pipeline Scaffolded</span>
-                </div>
-                <div>
-                    <div style="font-weight: 600; font-size: 0.85rem;">PDF Parser (PyMuPDF)</div>
-                    <span class="lg-badge lg-badge-green"><span class="lg-status-dot lg-dot-green"></span> Engine Loaded</span>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; text-align: center;">
+                    <div style="background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.2); padding: 0.5rem; border-radius: 8px;">
+                        <div style="font-size: 1.2rem; font-weight: 800; color: #f87171;">{high_risk_cnt}</div>
+                        <div style="font-size: 0.72rem; color: #94a3b8;">High Risk</div>
+                    </div>
+                    <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); padding: 0.5rem; border-radius: 8px;">
+                        <div style="font-size: 1.2rem; font-weight: 800; color: #fbbf24;">{med_risk_cnt}</div>
+                        <div style="font-size: 0.72rem; color: #94a3b8;">Medium Risk</div>
+                    </div>
+                    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); padding: 0.5rem; border-radius: 8px;">
+                        <div style="font-size: 1.2rem; font-weight: 800; color: #34d399;">{low_risk_cnt}</div>
+                        <div style="font-size: 0.72rem; color: #94a3b8;">Low Risk</div>
+                    </div>
                 </div>
             </div>
             """,
-            unsafe_allow_html=True,
+            unsafe_allow_html=True
         )
 
-        st.markdown("### 💡 Phase 1 Notice")
-        st.info(
-            "Welcome to the **LeaseGuard AI** foundation. The modular architecture, custom styling, service interfaces, and navigation structure are initialized.",
-            icon="ℹ️"
+    # Compute recovery pipeline amounts
+    rec_potential = sum(float(r.get("claim_amount", 0)) for r in recovery_records if r.get("status") == "Detected")
+    rec_disputed = sum(float(r.get("claim_amount", 0)) for r in recovery_records if r.get("status") == "Disputed")
+    rec_review = sum(float(r.get("claim_amount", 0)) for r in recovery_records if r.get("status") == "Under Review")
+    rec_settled = sum(float(r.get("recovered_amount", 0)) for r in recovery_records if r.get("status") == "Recovered")
+
+    with rcol2:
+        st.markdown(
+            f"""
+            <div class="lg-card">
+                <div style="font-weight: 700; font-size: 1.1rem; color: #ffffff; margin-bottom: 0.75rem;">
+                    💰 Recovery Pipeline Status
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
+                    <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); padding: 0.75rem; border-radius: 8px;">
+                        <div style="font-size: 0.72rem; color: #94a3b8; font-weight: 600;">POTENTIAL</div>
+                        <div style="font-size: 1.3rem; font-weight: 800; color: #38bdf8;">${rec_potential:,.2f}</div>
+                    </div>
+                    <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); padding: 0.75rem; border-radius: 8px;">
+                        <div style="font-size: 0.72rem; color: #94a3b8; font-weight: 600;">DISPUTED</div>
+                        <div style="font-size: 1.3rem; font-weight: 800; color: #fbbf24;">${rec_disputed:,.2f}</div>
+                    </div>
+                    <div style="background: rgba(192, 132, 252, 0.08); border: 1px solid rgba(192, 132, 252, 0.2); padding: 0.75rem; border-radius: 8px;">
+                        <div style="font-size: 0.72rem; color: #94a3b8; font-weight: 600;">UNDER REVIEW</div>
+                        <div style="font-size: 1.3rem; font-weight: 800; color: #c084fc;">${rec_review:,.2f}</div>
+                    </div>
+                    <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); padding: 0.75rem; border-radius: 8px;">
+                        <div style="font-size: 0.72rem; color: #94a3b8; font-weight: 600;">RECOVERED</div>
+                        <div style="font-size: 1.3rem; font-weight: 800; color: #34d399;">${rec_settled:,.2f}</div>
+                    </div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
         )
+
+    # -------------------------------------------------------------------------
+    # 3. Interactive Charts (Historical Recovery & Findings by Category)
+    # -------------------------------------------------------------------------
+    st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
+    ccol1, ccol2 = st.columns(2)
+
+    with ccol1:
+        st.markdown("### 📈 Historical Recovery Trend")
+        if recovery_records:
+            dates = [r.get("created_at", "")[:10] for r in recovery_records]
+            claims = [float(r.get("claim_amount", 0)) for r in recovery_records]
+            settled = [float(r.get("recovered_amount", 0)) for r in recovery_records]
+            history_df = pd.DataFrame({"Date": dates, "Identified": claims, "Recovered": settled})
+            fig_rec = go.Figure()
+            fig_rec.add_trace(go.Scatter(
+                x=history_df["Date"], y=history_df["Identified"],
+                mode='lines+markers', name='Identified Overcharges',
+                line=dict(color='#38bdf8', width=3),
+                fill='tonexty', fillcolor='rgba(56, 189, 248, 0.1)'
+            ))
+            fig_rec.add_trace(go.Scatter(
+                x=history_df["Date"], y=history_df["Recovered"],
+                mode='lines+markers', name='Recovered Cash/Credit',
+                line=dict(color='#10b981', width=3),
+                fill='tozeroy', fillcolor='rgba(16, 185, 129, 0.15)'
+            ))
+            fig_rec.update_layout(**_get_plotly_layout_defaults(), title="Cumulative Recovery vs Identified ($)", height=280)
+            st.plotly_chart(fig_rec, use_container_width=True)
+        else:
+            st.info("No recovery history available yet. Run an audit to identify recoverable lease overcharges.")
+
+    with ccol2:
+        st.markdown("### 🏷️ Findings by Category")
+        if findings:
+            cat_counts = {}
+            for f in findings:
+                cat = f.get("finding_type") or f.get("category") or "Other"
+                amt = float(f.get("amount") or f.get("potential_recovery") or 0.0)
+                cat_counts[cat] = cat_counts.get(cat, 0.0) + amt
+
+            cat_df = pd.DataFrame([{"Category": k, "Overcharge": v} for k, v in cat_counts.items()])
+            fig_cat = px.pie(
+                cat_df, values="Overcharge", names="Category",
+                color_discrete_sequence=["#38bdf8", "#818cf8", "#f59e0b", "#f43f5e", "#c084fc"],
+                hole=0.45
+            )
+            fig_cat.update_layout(**_get_plotly_layout_defaults(), title="Potential Recovery Distribution ($)", height=280)
+            st.plotly_chart(fig_cat, use_container_width=True)
+        else:
+            st.info("No findings available yet. Upload leases and invoices to launch your first audit.")
+
+    # -------------------------------------------------------------------------
+    # 4. High-Risk Properties, Recent Findings & Action Required Row
+    # -------------------------------------------------------------------------
+    st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
+    tcol1, tcol2 = st.columns([1.1, 0.9])
+
+    with tcol1:
+        st.markdown("### 🏢 High-Risk Properties")
+        if properties:
+            risk_table_rows = []
+            for p in properties:
+                pid = p.get("id")
+                pname = p.get("name", "Unknown Property")
+                pfindings = [f for f in findings if f.get("property_id") == pid]
+                prisk = [r for r in risk_scores if r.get("property_id") == pid]
+                rscore = prisk[0].get("score", 0) if prisk else 0
+                rtier = "HIGH" if rscore >= 70 else ("MEDIUM" if rscore >= 30 else "LOW")
+                p_rec = sum(float(f.get("amount", 0)) for f in pfindings)
+                risk_table_rows.append({
+                    "Property": pname,
+                    "Risk Score": f"{rscore} / 100",
+                    "Risk Tier": rtier,
+                    "Findings": len(pfindings),
+                    "Potential Recovery": f"${p_rec:,.2f}"
+                })
+            st.dataframe(pd.DataFrame(risk_table_rows), use_container_width=True, hide_index=True)
+        else:
+            st.info("No properties added yet. Add properties in the Properties or Audits module.")
+
+        st.markdown("<div style='height: 0.5rem;'></div>", unsafe_allow_html=True)
+        st.markdown("### ⚠️ Recent Discrepancy Findings")
+        if findings:
+            for rf in findings[:3]:
+                sev_badge = "lg-badge-red" if rf.get("severity") == "high" else "lg-badge-amber"
+                st.markdown(
+                    f"""
+                    <div class="lg-card" style="padding: 0.85rem 1.1rem; margin-bottom: 0.5rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="font-weight: 700; color: #ffffff; font-size: 0.9rem;">⚠️ {rf.get('title') or rf.get('finding_type')}</div>
+                            <div>
+                                <span class="lg-badge {sev_badge}">{(rf.get('severity') or 'medium').upper()}</span>
+                                <span class="lg-badge lg-badge-gray">{rf.get('status', 'Open')}</span>
+                            </div>
+                        </div>
+                        <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 0.25rem;">
+                            Potential Recovery: <strong style="color: #34d399;">${float(rf.get('amount', 0)):,.2f}</strong>
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+        else:
+            st.info("No findings recorded yet.")
+
+    with tcol2:
+        st.markdown("### ⚡ Action Required")
+        if total_properties == 0:
+            st.markdown(
+                """
+                <div class="lg-card" style="padding: 0.9rem 1.1rem; border-left: 4px solid #38bdf8; margin-bottom: 0.6rem;">
+                    <div style="font-weight: 700; color: #ffffff; font-size: 0.9rem;">Add Your First Property</div>
+                    <div style="font-size: 0.78rem; color: #94a3b8;">Create property records to begin tracking commercial lease audits.</div>
+                    <div style="margin-top: 0.4rem;"><span class="lg-badge lg-badge-blue">Getting Started</span></div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        elif total_audits == 0:
+            st.markdown(
+                """
+                <div class="lg-card" style="padding: 0.9rem 1.1rem; border-left: 4px solid #f59e0b; margin-bottom: 0.6rem;">
+                    <div style="font-weight: 700; color: #ffffff; font-size: 0.9rem;">Run Initial Lease Audit</div>
+                    <div style="font-size: 0.78rem; color: #94a3b8;">Upload your lease contract and annual CAM statement to audit overcharges.</div>
+                    <div style="margin-top: 0.4rem;"><span class="lg-badge lg-badge-amber">Audit Recommended</span></div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        else:
+            st.markdown(
+                """
+                <div class="lg-card" style="padding: 0.9rem 1.1rem; border-left: 4px solid #10b981; margin-bottom: 0.6rem;">
+                    <div style="font-weight: 700; color: #ffffff; font-size: 0.9rem;">All Audits Up To Date</div>
+                    <div style="font-size: 0.78rem; color: #94a3b8;">No pending action items for active property portfolio.</div>
+                    <div style="margin-top: 0.4rem;"><span class="lg-badge lg-badge-green">Optimal Status</span></div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
 
 
 if __name__ == "__main__":

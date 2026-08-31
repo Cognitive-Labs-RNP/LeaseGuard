@@ -1,159 +1,155 @@
 """
-Document Management Page for LeaseGuard AI (Phase 3 with RocketRide AI Extraction Test).
+Document Vault Page for LeaseGuard AI (Phase 5.1 Fixes).
+Allows uploading commercial lease contracts and billing statements, associating them with properties, and inspecting parsed files via Supabase.
 """
+
+import datetime
 import streamlit as st
 import pandas as pd
-from services.ai import extract_lease_rules
-
-DEFAULT_TEST_LEASE = """ABC Retail Lease has a base annual rent of $120,000.
-CAM expenses are capped at $10,000 per year.
-The tenant is responsible for 15% of applicable CAM expenses.
-Administrative fees may not exceed 5% of CAM expenses.
-The landlord must provide an annual CAM reconciliation."""
-
-
-def render_phase3_ai_test():
-    """Render Phase 3 RocketRide Lease Extraction test section."""
-    st.markdown("#### 🧪 RocketRide AI Lease Extraction Test (Phase 3)")
-    st.caption("Test the RocketRide AI pipeline with Gemini (Primary) and Groq (Fallback) LLMs.")
-
-    test_text = st.text_area(
-        "Enter Commercial Lease Document Text:",
-        value=DEFAULT_TEST_LEASE,
-        height=150,
-        help="Paste lease clauses or sample lease text to extract structured rules."
-    )
-
-    col1, col2 = st.columns([2, 1])
-    with col1:
-        run_btn = st.button("🚀 Extract Lease Rules (RocketRide Pipeline)", type="primary", use_container_width=True)
-    with col2:
-        force_fallback = st.checkbox("Simulate Gemini Failure (Test Groq Fallback)", value=False)
-
-    if run_btn:
-        if not test_text.strip():
-            st.error("Please enter lease text to execute extraction.")
-            return
-
-        with st.spinner("Executing RocketRide AI Pipeline..."):
-            result = extract_lease_rules(test_text, force_fallback=force_fallback)
-
-        if result["status"] == "success":
-            provider = result.get("provider", "unknown")
-            if provider == "gemini":
-                st.success("✅ Extraction Succeeded via Primary Provider: **Gemini (RocketRide Cloud)**")
-            elif provider == "groq":
-                st.warning("⚡ Extraction Succeeded via Fallback Provider: **Groq (RocketRide Cloud)**")
-                if result.get("primary_error"):
-                    st.info(f"ℹ️ Primary Provider Note: {result['primary_error']}")
-
-            data = result.get("data") or {}
-
-            # Display Key Extracted Terms
-            st.markdown("##### Extracted Terms Overview")
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("Base Rent", f"${data.get('base_rent'):,.0f}" if data.get("base_rent") else "N/A", delta=data.get("rent_frequency"))
-            m2.metric("CAM Cap", f"${data.get('cam_cap'):,.0f}" if data.get("cam_cap") else "N/A")
-            m3.metric("Tenant Share", data.get("tenant_share") or "N/A")
-            m4.metric("Admin Fee", data.get("administrative_fee_rules") or "N/A")
-
-            # Structured Data JSON
-            with st.expander("📄 View Validated Pydantic JSON Structure", expanded=True):
-                st.json(data)
-
-            # Evidence Quotes
-            with st.expander("🔍 Extracted Verbatim Evidence Quotes", expanded=False):
-                evidence_items = {k: v for k, v in data.items() if k.endswith("_evidence") and v}
-                if evidence_items:
-                    for k, v in evidence_items.items():
-                        st.markdown(f"- **{k}**: *\"{v}\"*")
-                else:
-                    st.write("No evidence quotes recorded.")
-        else:
-            st.error(f"❌ AI Pipeline Execution Failed: {result.get('message', 'Unknown error')}")
-            if result.get("errors"):
-                with st.expander("Technical Error Log"):
-                    st.json(result["errors"])
+from services.auth import require_auth
+from services.supabase import SupabaseService
 
 
 def render():
-    """Render Document Management view."""
+    """Render Document Vault view."""
+    user = require_auth()
+    if not user:
+        st.warning("🔒 Please sign in to access LeaseGuard.")
+        return
+
     st.markdown(
         """
         <div class="lg-header">
-            <div class="lg-title">📁 Document Vault & AI Pipelines</div>
-            <div class="lg-subtitle">Ingest lease agreements and execute RocketRide AI Extraction pipelines.</div>
+            <div class="lg-title">📁 Document Vault</div>
+            <div class="lg-subtitle">Upload commercial leases and reconciliation statements associated with portfolio properties.</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    tab_test, tab_upload, tab_archive = st.tabs([
-        "🧪 RocketRide AI Extraction Test",
-        "📤 Upload New Documents",
-        "📚 Document Archive"
-    ])
+    supabase = SupabaseService()
+    properties = supabase.get_properties()
+    vault_docs = supabase.get_documents()
 
-    with tab_test:
-        render_phase3_ai_test()
+    if "session_documents" not in st.session_state:
+        st.session_state["session_documents"] = []
 
-    with tab_upload:
-        st.markdown("#### Document Ingestion")
-        doc_col1, doc_col2 = st.columns(2)
+    st.markdown("### 📤 Upload New Document")
 
-        with doc_col1:
-            doc_type = st.selectbox(
-                "Document Classification",
-                ["Lease Agreement / Amendment", "CAM Reconciliation Statement", "Utility & Operating Invoice", "Property Tax Assessment"]
-            )
-            prop_target = st.selectbox(
-                "Associated Property",
-                ["PROP-001 - Skyline Commercial Center", "PROP-002 - Apex Logistics Hub", "PROP-003 - Harbor Retail Plaza", "PROP-004 - Beacon Medical Center"]
-            )
+    with st.container():
+        st.markdown('<div class="lg-card">', unsafe_allow_html=True)
 
-        with doc_col2:
-            st.text_input("Document Label / Reference Title", placeholder="e.g. 2026 CAM Year-End True-Up")
-            st.date_input("Document Effective Date")
+        if not properties:
+            st.info("⚠️ No properties available. Please add a commercial property first to upload documents.")
+            with st.expander("➕ Add Property Now", expanded=True):
+                with st.form("quick_add_prop_docs"):
+                    new_pname = st.text_input("Property Name", placeholder="e.g. Skyline Commercial Center")
+                    new_pcode = st.text_input("Property Code", placeholder="e.g. PROP-001")
+                    new_paddr = st.text_input("Address", placeholder="e.g. 100 Financial Plaza, Suite 400")
+                    new_sqft = st.number_input("Square Footage", value=25000, step=1000)
+                    if st.form_submit_button("Create Property", type="primary"):
+                        if new_pname:
+                            supabase.create_property({
+                                "name": new_pname,
+                                "code": new_pcode or "PROP-001",
+                                "address": new_paddr or "N/A",
+                                "square_feet": float(new_sqft),
+                                "status": "Active"
+                            })
+                            st.success(f"Property '{new_pname}' created!")
+                            st.rerun()
+                        else:
+                            st.error("Property name is required.")
+            st.markdown('</div>', unsafe_allow_html=True)
+            return
 
-        uploaded_files = st.file_uploader(
-            "Upload PDF, TIFF, or DOCX documents",
-            type=["pdf", "tiff", "docx", "png", "jpg"],
-            accept_multiple_files=True,
-            help="Files will be parsed via PyMuPDF and prepared for the RocketRide AI extraction pipeline."
-        )
+        prop_map = {f"{p.get('code', 'PROP')}: {p.get('name')}": p for p in properties}
+        
+        ucol1, ucol2, ucol3 = st.columns(3)
+        with ucol1:
+            selected_prop_label = st.selectbox("Target Property", list(prop_map.keys()))
+            selected_prop = prop_map[selected_prop_label]
+            selected_prop_id = selected_prop.get("id")
+        with ucol2:
+            doc_type = st.selectbox("Document Type", ["Lease Agreement", "CAM Reconciliation Statement", "Utility Invoice", "Tax Bill", "Building Amendment"])
+        with ucol3:
+            doc_title = st.text_input("Document Title / Reference", placeholder="e.g. 2026_Master_Lease_Amendment.pdf")
 
-        if uploaded_files:
-            st.success(f"{len(uploaded_files)} file(s) staged. Use the RocketRide AI Extraction tab to process documents.")
+        uploaded_file = st.file_uploader("Choose PDF or TXT Document File", type=["pdf", "txt"])
 
-    with tab_archive:
-        st.markdown("#### Ingested Documents")
-        sample_docs = pd.DataFrame([
-            {
-                "Doc ID": "DOC-L-01",
-                "Type": "Lease Contract",
-                "Property": "Skyline Commercial Center",
-                "Filename": "Skyline_Master_Lease_2024.pdf",
-                "Status": "Parsed (PyMuPDF Ready)",
-                "Uploaded": "2026-08-15"
-            },
-            {
-                "Doc ID": "DOC-I-14",
-                "Type": "CAM Statement",
-                "Property": "Skyline Commercial Center",
-                "Filename": "Skyline_2025_CAM_Reconciliation.pdf",
-                "Status": "Pending Audit",
-                "Uploaded": "2026-08-20"
-            },
-            {
-                "Doc ID": "DOC-L-02",
-                "Type": "Lease Contract",
-                "Property": "Harbor Retail Plaza",
-                "Filename": "Harbor_Lease_Amendment_1.pdf",
-                "Status": "Parsed (PyMuPDF Ready)",
-                "Uploaded": "2026-08-22"
-            }
-        ])
-        st.dataframe(sample_docs, use_container_width=True, hide_index=True)
+        upload_btn = st.button("📥 Upload to Document Vault", type="primary", use_container_width=True)
+
+        if upload_btn:
+            if not selected_prop_id:
+                st.error("Document upload failed: Target property must be selected.")
+            elif uploaded_file is None and not doc_title:
+                st.warning("Please choose a file or provide a document title.")
+            else:
+                try:
+                    fname = uploaded_file.name if uploaded_file else (doc_title or "Uploaded_Document.pdf")
+                    fsize = f"{round(uploaded_file.size / 1024, 1)} KB" if uploaded_file else "1.2 MB"
+
+                    content_text = ""
+                    if uploaded_file is not None:
+                        try:
+                            content_text = uploaded_file.getvalue().decode("utf-8", errors="ignore")
+                        except Exception:
+                            content_text = f"Parsed binary file content for {fname}"
+
+                    doc_payload = {
+                        "property_id": selected_prop_id,
+                        "document_type": doc_type,
+                        "filename": fname,
+                        "file_size": fsize,
+                        "storage_path": f"documents/{fname}",
+                        "content_text": content_text,
+                        "status": "Uploaded & Indexed",
+                        "Title": fname,
+                        "Type": doc_type,
+                        "Property": selected_prop.get("name"),
+                        "File Size": fsize,
+                        "Status": "Uploaded & Indexed",
+                        "Date Uploaded": datetime.date.today().strftime("%Y-%m-%d")
+                    }
+
+                    # Persist metadata to Supabase
+                    saved_doc = supabase.save_document(doc_payload)
+                    if saved_doc:
+                        st.session_state["session_documents"].insert(0, doc_payload)
+                        st.success(f"Document '{fname}' uploaded successfully and saved to Document Vault!")
+                        st.rerun()
+                    else:
+                        st.error(f"Document upload failed: Database persistence error.")
+                except Exception as exc:
+                    st.error(f"Document upload failed: {str(exc)}")
+
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
+    st.markdown("### 📋 Document Storage Vault")
+
+    # Combine database vault records and session records
+    combined_docs = []
+    seen_ids = set()
+
+    for d in vault_docs + st.session_state["session_documents"]:
+        did = d.get("id") or d.get("filename") or d.get("Title")
+        if did not in seen_ids:
+            seen_ids.add(did)
+            combined_docs.append({
+                "Document ID": d.get("id", f"DOC-{len(seen_ids):02d}"),
+                "Filename / Title": d.get("filename") or d.get("Title", "Document.pdf"),
+                "Property ID": d.get("property_id") or d.get("Property", "N/A"),
+                "Document Type": d.get("document_type") or d.get("Type", "Lease Agreement"),
+                "File Size": d.get("file_size") or d.get("File Size", "1.2 MB"),
+                "Status": d.get("status") or d.get("Status", "Uploaded & Indexed"),
+                "Created At": str(d.get("created_at") or d.get("Date Uploaded") or datetime.date.today())[:10]
+            })
+
+    if not combined_docs:
+        st.info("No documents uploaded yet. Use the form above to upload commercial lease contracts and reconciliation statements.")
+    else:
+        st.dataframe(pd.DataFrame(combined_docs), use_container_width=True, hide_index=True)
 
 
 if __name__ == "__main__":

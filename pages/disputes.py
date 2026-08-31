@@ -1,78 +1,108 @@
 """
-Dispute Letter Generator Page for LeaseGuard AI.
-Generates contractual audit dispute letters for landlord communication.
+Dispute Letters Page for LeaseGuard AI (Phase 5 Cleanup).
+Generates evidence-backed landlord dispute letters via AI and provides human review/editing prior to export using Supabase records.
 """
+
 import streamlit as st
+from services.auth import require_auth
+from services.ai import AIService
+from services.supabase import SupabaseService
 
 
 def render():
     """Render Dispute Letter Generator view."""
+    user = require_auth()
+    if not user:
+        st.warning("🔒 Please sign in to access LeaseGuard.")
+        return
+
     st.markdown(
         """
         <div class="lg-header">
             <div class="lg-title">✉️ Dispute Letter Generator</div>
-            <div class="lg-subtitle">Draft legally precise audit dispute letters backed by lease clause references.</div>
+            <div class="lg-subtitle">Generate evidence-backed landlord dispute notices via AI with mandatory human review before export.</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    col_form, col_preview = st.columns([1, 1])
+    supabase = SupabaseService()
+    findings_list = supabase.get_findings()
 
-    with col_form:
-        st.markdown("### 📝 Dispute Parameters")
-        with st.container():
-            st.markdown('<div class="lg-card">', unsafe_allow_html=True)
-            prop_choice = st.selectbox(
-                "Select Property",
-                ["PROP-001 - Skyline Commercial Center", "PROP-003 - Harbor Retail Plaza", "PROP-004 - Beacon Medical Center"]
-            )
-            finding_target = st.multiselect(
-                "Select Findings to Include in Dispute",
-                [
-                    "FND-101: CAM Cap Violation ($6,200.00)",
-                    "FND-102: Capital Expenditure Exclusion ($8,620.00)",
-                    "FND-103: Pro-Rata Share Error ($2,954.00)"
-                ],
-                default=["FND-101: CAM Cap Violation ($6,200.00)", "FND-102: Capital Expenditure Exclusion ($8,620.00)"]
-            )
-            recipient_name = st.text_input("Landlord / Property Manager Name", value="Horizon Properties Management LLC")
-            tone_style = st.selectbox("Letter Tone", ["Collaborative & Professional", "Formal Contractual Notice", "Urgent / Escalated Notice"])
-            
-            gen_btn = st.button("✨ Draft Dispute Letter", type="primary", use_container_width=True)
-            if gen_btn:
-                st.info("LLM letter synthesis will be powered by the RocketRide/Gemini pipeline in the AI phase.")
-            st.markdown('</div>', unsafe_allow_html=True)
+    if "target_dispute_finding" in st.session_state:
+        target_f = st.session_state["target_dispute_finding"]
+        if target_f not in findings_list:
+            findings_list.insert(0, target_f)
 
-    with col_preview:
-        st.markdown("### 📄 Letter Preview")
-        preview_text = f"""**VIA CERTIFIED MAIL & EMAIL**
+    if not findings_list:
+        st.info("No discrepancy findings available for dispute generation. Run an audit in 🔍 Audits to flag lease overcharges first.")
+        return
 
-**Date:** August 30, 2026
-**To:** {recipient_name}
-**Re:** Notice of Operating Expense Discrepancies & Audit Findings - Skyline Commercial Center
+    st.markdown("### 📄 Step 1: Select Discrepancy Finding")
 
-Dear Horizon Properties Management,
+    selected_idx = st.selectbox(
+        "Target Discrepancy Finding",
+        range(len(findings_list)),
+        format_func=lambda i: f"{findings_list[i].get('property_id', 'Property')} - {findings_list[i].get('title') or findings_list[i].get('finding_type')} (${float(findings_list[i].get('amount', 0)):,.2f})"
+    )
 
-Pursuant to Section 4.2 of the Master Lease Agreement dated January 15, 2024, between Skyline Properties LLC ("Landlord") and Tenant, we have conducted a compliance review of the 2025 Common Area Maintenance (CAM) reconciliation statement.
+    finding = findings_list[selected_idx]
 
-Our audit identified the following billing variances totaling **$14,820.00** in overcharges:
+    col1, col2 = st.columns(2)
+    with col1:
+        landlord_name = st.text_input("Landlord Entity Name", placeholder="e.g. Commercial Property Management LLC")
+    with col2:
+        tenant_name = st.text_input("Tenant Entity Name", placeholder="e.g. Operations Tenant Inc.")
 
-1. **Controllable Expense Cap Exceeded ($6,200.00):** Section 4.2 establishes a strict 5% annual cumulative cap on controllable operating costs.
-2. **Ineligible Capital Replacement ($8,620.00):** Section 4.3 specifically excludes structural HVAC replacements exceeding $5,000 from operating expenses.
+    gen_btn = st.button("✨ Generate AI Dispute Letter", type="primary", use_container_width=True)
 
-Please review the attached reconciliation exhibits and apply a billing credit of **$14,820.00** toward our upcoming rent payment.
+    if gen_btn or "current_dispute_letter" not in st.session_state:
+        ai_service = AIService()
+        ctx = {
+            "property_name": finding.get("property_id", "Property"),
+            "landlord_name": landlord_name or "Landlord Entity",
+            "tenant_name": tenant_name or "Tenant Entity"
+        }
+        finding_payload = {
+            "category": finding.get("title") or finding.get("finding_type", "CAM Cap Exceeded"),
+            "explanation": finding.get("description", "Overcharge flagged"),
+            "potential_recovery": float(finding.get("amount", 0.0)),
+            "billed_amount": float(finding.get("billed_amount", finding.get("amount", 0.0))),
+            "allowed_amount": float(finding.get("allowed_amount", 0.0)),
+            "lease_evidence": finding.get("lease_evidence", "Lease agreement terms"),
+            "invoice_evidence": finding.get("invoice_evidence", "Billed invoice statement")
+        }
+        letter_text = ai_service.generate_dispute_letter(finding_payload, ctx)
+        st.session_state["current_dispute_letter"] = letter_text
 
-Sincerely,
-Lease Administration & Audit Team
-"""
-        st.text_area("Generated Draft", value=preview_text, height=360)
-        
-        btn_col1, btn_col2 = st.columns(2)
-        with btn_col1:
-            st.button("📥 Export PDF (ReportLab)", use_container_width=True)
-        with btn_col2:
-            st.button("📋 Copy to Clipboard", use_container_width=True)
+    st.markdown("<div style='height: 1rem;'></div>", unsafe_allow_html=True)
+    st.markdown("### ✏️ Step 2: Human Review & Edit (Mandatory)")
+    st.caption("Review and edit the generated dispute notice prior to formal export.")
+
+    edited_letter = st.text_area(
+        "Dispute Letter Content",
+        value=st.session_state.get("current_dispute_letter", ""),
+        height=380
+    )
+
+    st.markdown("### 📥 Step 3: Export & Download")
+    dcol1, dcol2 = st.columns(2)
+    with dcol1:
+        st.download_button(
+            "⬇️ Download Text File (.txt)",
+            data=edited_letter,
+            file_name=f"Dispute_Notice_{finding.get('id', '001')}.txt",
+            mime="text/plain",
+            use_container_width=True
+        )
+    with dcol2:
+        st.download_button(
+            "⬇️ Download Markdown (.md)",
+            data=edited_letter,
+            file_name=f"Dispute_Notice_{finding.get('id', '001')}.md",
+            mime="text/markdown",
+            use_container_width=True
+        )
 
 
 if __name__ == "__main__":

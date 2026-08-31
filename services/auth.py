@@ -22,6 +22,22 @@ def get_supabase_client() -> Client:
     return create_client(url, key)
 
 
+def _user_to_dict(user: Any) -> Dict[str, Any]:
+    """Convert Supabase User object or dict to standard python dictionary."""
+    if user is None:
+        return {}
+    if isinstance(user, dict):
+        return user
+    if hasattr(user, "model_dump"):
+        return user.model_dump()
+    res = {}
+    if hasattr(user, "id"):
+        res["id"] = user.id
+    if hasattr(user, "email"):
+        res["email"] = user.email
+    return res
+
+
 def register_user(email: str, password: str) -> Dict[str, Any]:
     """Register a new user via Supabase Email authentication."""
     email = (email or "").strip()
@@ -36,7 +52,7 @@ def register_user(email: str, password: str) -> Dict[str, Any]:
     if response.user is None:
         raise RuntimeError("Registration failed. Please check your email and password.")
 
-    return response.user
+    return _user_to_dict(response.user)
 
 
 def login_user(email: str, password: str) -> Dict[str, Any]:
@@ -53,7 +69,7 @@ def login_user(email: str, password: str) -> Dict[str, Any]:
     if response.user is None:
         raise RuntimeError("Invalid email or password.")
 
-    return response.user
+    return _user_to_dict(response.user)
 
 
 def logout_user() -> None:
@@ -70,9 +86,7 @@ def get_current_user() -> Optional[Dict[str, Any]]:
         user = getattr(response, "user", None)
         if user is None:
             return None
-        if hasattr(user, "model_dump"):
-            return user.model_dump()
-        return dict(user)
+        return _user_to_dict(user)
     except Exception:
         return None
 
@@ -91,3 +105,18 @@ def require_authenticated_user_id() -> str:
     if user_id is None:
         raise PermissionError("Authentication required. Please log in.")
     return user_id
+
+
+def require_auth() -> Optional[Dict[str, Any]]:
+    """Return authenticated user dictionary or None if unauthenticated."""
+    import streamlit as st
+
+    user = st.session_state.get("authenticated_user")
+    if not user:
+        user = get_current_user()
+        if user:
+            st.session_state["authenticated_user"] = user
+            st.session_state["user_id"] = user.get("id")
+
+    return user
+

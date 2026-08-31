@@ -1,88 +1,107 @@
 """
-Audit Findings & Overcharges Page for LeaseGuard AI.
-Displays itemized discrepancies, clause violations, and financial calculations.
+Findings & Overcharges Page for LeaseGuard AI (Phase 5 Cleanup).
+Inspect, filter, and take action on identified lease overcharge findings from Supabase.
 """
+
 import streamlit as st
 import pandas as pd
+from services.auth import require_auth
+from services.supabase import SupabaseService
 
 
 def render():
-    """Render Audit Findings view."""
+    """Render Discrepancy Findings & Overcharges view."""
+    user = require_auth()
+    if not user:
+        st.warning("🔒 Please sign in to access LeaseGuard.")
+        return
+
     st.markdown(
         """
         <div class="lg-header">
-            <div class="lg-title">⚠️ Audit Findings & Overcharges</div>
-            <div class="lg-subtitle">Detailed itemized discrepancies, lease clause violations, and financial variance.</div>
+            <div class="lg-title">⚠️ Findings & Overcharges</div>
+            <div class="lg-subtitle">Filter, inspect evidence, and generate dispute letters for identified overcharges.</div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    filter_col1, filter_col2, filter_col3 = st.columns(3)
-    with filter_col1:
-        st.selectbox("Filter by Property", ["All Properties", "Skyline Commercial Center", "Harbor Retail Plaza"])
-    with filter_col2:
-        st.selectbox("Filter by Finding Category", ["All Categories", "CAM Cap Violation", "Excluded Expense (Capital Item)", "Pro-rata Share Error", "Administrative Fee Markup"])
-    with filter_col3:
-        st.selectbox("Filter by Status", ["All Statuses", "Unclaimed", "Drafted in Dispute", "Recovered"])
+    supabase = SupabaseService()
+    findings_data = supabase.get_findings()
 
-    findings_data = pd.DataFrame([
-        {
-            "Finding ID": "FND-101",
-            "Property": "Skyline Commercial",
-            "Category": "CAM Cap Violation",
-            "Clause Ref": "Section 4.2 (5% Controllable Cap)",
-            "Billed Amount": "$48,200",
-            "Allowed Max": "$42,000",
-            "Overcharge Amount": "$6,200.00",
-            "Confidence": "High (98%)",
-            "Status": "Unclaimed"
-        },
-        {
-            "Finding ID": "FND-102",
-            "Property": "Skyline Commercial",
-            "Category": "Capital Expenditure Exclusion",
-            "Clause Ref": "Section 4.3 (Structural HVAC Exclusion)",
-            "Billed Amount": "$8,620",
-            "Allowed Max": "$0",
-            "Overcharge Amount": "$8,620.00",
-            "Confidence": "High (95%)",
-            "Status": "Dispute Drafted"
-        },
-        {
-            "Finding ID": "FND-103",
-            "Property": "Harbor Retail Plaza",
-            "Category": "Pro-Rata Share Miscalculation",
-            "Clause Ref": "Exhibit B (12.4% vs 14.1% billed)",
-            "Billed Amount": "$24,500",
-            "Allowed Max": "$21,546",
-            "Overcharge Amount": "$2,954.00",
-            "Confidence": "High (92%)",
-            "Status": "Unclaimed"
-        }
-    ])
+    if not findings_data:
+        st.info("No discrepancy findings available yet. Run an audit in the 🔍 Audits module to detect lease overcharges.")
+        return
 
-    st.dataframe(findings_data, use_container_width=True, hide_index=True)
+    # -------------------------------------------------------------------------
+    # Filters
+    # -------------------------------------------------------------------------
+    st.markdown("### 🔍 Filter Findings")
+    fcol1, fcol2, fcol3, fcol4 = st.columns(4)
 
-    st.markdown("### 🔎 Finding Evidence Inspector")
-    with st.expander("Inspect FND-102: Capital Expenditure Exclusion ($8,620.00)", expanded=True):
-        st.markdown(
-            """
-            <div class="lg-card">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
-                    <strong>Violation: Ineligible Capital Replacement Invoiced as Operating Maintenance</strong>
-                    <span class="lg-badge lg-badge-red">Overcharge: $8,620.00</span>
+    properties_list = ["All Properties"] + list(set(f.get("property_id", "Unknown") for f in findings_data))
+    severities_list = ["All Severities", "high", "medium", "low"]
+    categories_list = ["All Categories"] + list(set(f.get("finding_type", "Discrepancy") for f in findings_data))
+    statuses_list = ["All Statuses", "open", "Disputed", "Under Review", "Recovered"]
+
+    with fcol1:
+        sel_prop = st.selectbox("Property", properties_list)
+    with fcol2:
+        sel_sev = st.selectbox("Severity", severities_list)
+    with fcol3:
+        sel_cat = st.selectbox("Category", categories_list)
+    with fcol4:
+        sel_stat = st.selectbox("Status", statuses_list)
+
+    # Filter logic
+    filtered = findings_data
+    if sel_prop != "All Properties":
+        filtered = [f for f in filtered if f.get("property_id") == sel_prop]
+    if sel_sev != "All Severities":
+        filtered = [f for f in filtered if f.get("severity") == sel_sev]
+    if sel_cat != "All Categories":
+        filtered = [f for f in filtered if f.get("finding_type") == sel_cat]
+    if sel_stat != "All Statuses":
+        filtered = [f for f in filtered if f.get("status") == sel_stat]
+
+    st.markdown("<div style='height: 0.75rem;'></div>", unsafe_allow_html=True)
+    st.markdown(f"### 📋 Discrepancies Flagged ({len(filtered)})")
+
+    if not filtered:
+        st.info("No findings match the selected filter criteria.")
+        return
+
+    for idx, f in enumerate(filtered):
+        sev = f.get("severity", "medium")
+        sev_color = "red" if sev == "high" else ("amber" if sev == "medium" else "blue")
+        stat = f.get("status", "open")
+        stat_color = "green" if stat == "Recovered" else ("purple" if stat == "Under Review" else "amber")
+        amt = float(f.get("amount", 0.0))
+
+        with st.container():
+            st.markdown(
+                f"""
+                <div class="lg-finding-card {sev}">
+                    <div class="lg-finding-title">
+                        <span>⚠️ {f.get('title') or f.get('finding_type')} <span style="font-size: 0.85rem; color: #94a3b8; font-weight: 500;">({f.get('property_id', 'Property')})</span></span>
+                        <div>
+                            <span class="lg-badge lg-badge-{sev_color}">{sev.upper()}</span>
+                            <span class="lg-badge lg-badge-{stat_color}">{stat}</span>
+                        </div>
+                    </div>
+                    <div style="font-size: 0.9rem; color: #cbd5e1; margin-top: 0.5rem;">{f.get('description', '')}</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; margin-top: 0.75rem; font-size: 0.85rem;">
+                        <div><strong style="color: #94a3b8;">Potential Recovery:</strong> <span style="color: #34d399; font-weight: 700;">${amt:,.2f}</span></div>
+                    </div>
                 </div>
-                <p style="font-size: 0.88rem; color: #475569; margin-bottom: 0.5rem;">
-                    <strong>Lease Rule (Section 4.3):</strong> "Operating expenses shall explicitly exclude any capital improvements, structural replacements, or roof/chiller replacements exceeding $5,000 amortizable life."
-                </p>
-                <p style="font-size: 0.88rem; color: #475569;">
-                    <strong>Invoice Line Item (Inv #2025-992):</strong> "Full replacement of central rooftop condenser unit - Unit 4: $8,620.00"
-                </p>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
+                """,
+                unsafe_allow_html=True
+            )
+            col_act1, col_act2 = st.columns([0.3, 0.7])
+            with col_act1:
+                if st.button(f"✉️ Generate Dispute Letter", key=f"btn_{f.get('id', idx)}"):
+                    st.session_state["target_dispute_finding"] = f
+                    st.info(f"Selected finding '{f.get('title')}' for dispute letter generation. Go to ✉️ Disputes page to review.")
 
 
 if __name__ == "__main__":
