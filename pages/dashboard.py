@@ -13,14 +13,22 @@ from utils.ui import empty_state, metric_card, page_header, section_header
 
 
 def _get_plotly_layout_defaults():
-    """Return dark indie-premium theme styling defaults for Plotly charts."""
+    """Return high-contrast enterprise theme styling defaults for Plotly charts."""
     return dict(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="#94a3b8", family="Plus Jakarta Sans"),
-        margin=dict(l=20, r=20, t=40, b=20),
-        xaxis=dict(gridcolor="rgba(255,255,255,0.06)", showgrid=True),
-        yaxis=dict(gridcolor="rgba(255,255,255,0.06)", showgrid=True),
+        font=dict(color="#111827", family="Plus Jakarta Sans", size=12),
+        title_font=dict(color="#111827", family="Plus Jakarta Sans", size=14),
+        legend_font=dict(color="#475569", family="Plus Jakarta Sans", size=11),
+        margin=dict(l=20, r=20, t=44, b=20),
+        xaxis=dict(gridcolor="#F3E1CB", showgrid=True,
+                   tickfont=dict(color="#475569"),
+                   title_font=dict(color="#111827")),
+        yaxis=dict(gridcolor="#F3E1CB", showgrid=True,
+                   tickfont=dict(color="#475569"),
+                   title_font=dict(color="#111827")),
+        legend=dict(bgcolor="rgba(255,255,255,0.8)",
+                    bordercolor="#F3E1CB", borderwidth=1),
     )
 
 
@@ -78,9 +86,9 @@ def render():
     with col2:
         metric_card("Active Audits", str(total_audits), "Completed audit sessions", "purple")
     with col3:
-        metric_card("Potential Recovery", f"${potential_rec:,.2f}", f"{total_findings} flagged findings", "warning")
+        metric_card("Potential Recovery", f"₹{potential_rec:,.2f}", f"{total_findings} flagged findings", "warning")
     with col4:
-        metric_card("Recovered Amount", f"${recovered_amt:,.2f}", "Settled credits", "success")
+        metric_card("Recovered Amount", f"₹{recovered_amt:,.2f}", "Settled credits", "success")
     with col5:
         metric_card("Portfolio Risk", f"{avg_risk:g} / 100" if risk_scores else "Unassessed", "Latest portfolio assessment", "danger" if avg_risk >= 70 else "warning")
 
@@ -98,30 +106,30 @@ def render():
         st.markdown(
             f"""
             <div class="lg-card">
-                <div style="font-weight: 700; font-size: 1.1rem; color: #ffffff; margin-bottom: 0.75rem;">
+                <div style="font-weight: 700; font-size: 1.1rem; color: #111827; margin-bottom: 0.75rem;">
                     🛡️ Portfolio Risk Breakdown
                 </div>
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
                     <div>
-                        <div style="font-size: 0.8rem; color: #94a3b8;">Average Portfolio Score</div>
-                        <div style="font-size: 2.2rem; font-weight: 800; color: #fbbf24;">{avg_risk if risk_scores else '0'} <span style="font-size: 1rem; color: #64748b;">/ 100</span></div>
+                        <div style="font-size: 0.8rem; color: #475569; font-weight: 600;">Average Portfolio Score</div>
+                        <div style="font-size: 2.2rem; font-weight: 800; color: #D97706;">{avg_risk if risk_scores else '0'} <span style="font-size: 1rem; color: #64748B;">/ 100</span></div>
                     </div>
                     <div>
                         <span class="lg-badge {risk_color_cls}">{risk_badge if risk_scores else 'Unassessed'}</span>
                     </div>
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; text-align: center;">
-                    <div style="background: rgba(244, 63, 94, 0.1); border: 1px solid rgba(244, 63, 94, 0.2); padding: 0.5rem; border-radius: 8px;">
-                        <div style="font-size: 1.2rem; font-weight: 800; color: #f87171;">{high_risk_cnt}</div>
-                        <div style="font-size: 0.72rem; color: #94a3b8;">High Risk</div>
+                    <div style="background: rgba(220, 38, 38, 0.08); border: 1px solid rgba(220, 38, 38, 0.2); padding: 0.5rem; border-radius: 8px;">
+                        <div style="font-size: 1.2rem; font-weight: 800; color: #DC2626;">{high_risk_cnt}</div>
+                        <div style="font-size: 0.72rem; color: #475569; font-weight: 600;">High Risk</div>
                     </div>
-                    <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); padding: 0.5rem; border-radius: 8px;">
-                        <div style="font-size: 1.2rem; font-weight: 800; color: #fbbf24;">{med_risk_cnt}</div>
-                        <div style="font-size: 0.72rem; color: #94a3b8;">Medium Risk</div>
+                    <div style="background: rgba(217, 119, 6, 0.08); border: 1px solid rgba(217, 119, 6, 0.22); padding: 0.5rem; border-radius: 8px;">
+                        <div style="font-size: 1.2rem; font-weight: 800; color: #D97706;">{med_risk_cnt}</div>
+                        <div style="font-size: 0.72rem; color: #475569; font-weight: 600;">Medium Risk</div>
                     </div>
-                    <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2); padding: 0.5rem; border-radius: 8px;">
-                        <div style="font-size: 1.2rem; font-weight: 800; color: #34d399;">{low_risk_cnt}</div>
-                        <div style="font-size: 0.72rem; color: #94a3b8;">Low Risk</div>
+                    <div style="background: rgba(22, 163, 74, 0.08); border: 1px solid rgba(22, 163, 74, 0.2); padding: 0.5rem; border-radius: 8px;">
+                        <div style="font-size: 1.2rem; font-weight: 800; color: #16A34A;">{low_risk_cnt}</div>
+                        <div style="font-size: 0.72rem; color: #475569; font-weight: 600;">Low Risk</div>
                     </div>
                 </div>
             </div>
@@ -139,25 +147,25 @@ def render():
         st.markdown(
             f"""
             <div class="lg-card">
-                <div style="font-weight: 700; font-size: 1.1rem; color: #ffffff; margin-bottom: 0.75rem;">
+                <div style="font-weight: 700; font-size: 1.1rem; color: #111827; margin-bottom: 0.75rem;">
                     💰 Recovery Pipeline Status
                 </div>
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem;">
-                    <div style="background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.2); padding: 0.75rem; border-radius: 8px;">
-                        <div style="font-size: 0.72rem; color: #94a3b8; font-weight: 600;">POTENTIAL</div>
-                        <div style="font-size: 1.3rem; font-weight: 800; color: #38bdf8;">${rec_potential:,.2f}</div>
+                    <div style="background: rgba(37, 99, 235, 0.06); border: 1px solid rgba(37, 99, 235, 0.18); padding: 0.75rem; border-radius: 8px;">
+                        <div style="font-size: 0.72rem; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">POTENTIAL</div>
+                        <div style="font-size: 1.3rem; font-weight: 800; color: #2563EB; margin-top: 0.15rem;">₹{rec_potential:,.2f}</div>
                     </div>
-                    <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); padding: 0.75rem; border-radius: 8px;">
-                        <div style="font-size: 0.72rem; color: #94a3b8; font-weight: 600;">DISPUTED</div>
-                        <div style="font-size: 1.3rem; font-weight: 800; color: #fbbf24;">${rec_disputed:,.2f}</div>
+                    <div style="background: rgba(217, 119, 6, 0.07); border: 1px solid rgba(217, 119, 6, 0.22); padding: 0.75rem; border-radius: 8px;">
+                        <div style="font-size: 0.72rem; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">DISPUTED</div>
+                        <div style="font-size: 1.3rem; font-weight: 800; color: #D97706; margin-top: 0.15rem;">₹{rec_disputed:,.2f}</div>
                     </div>
-                    <div style="background: rgba(192, 132, 252, 0.08); border: 1px solid rgba(192, 132, 252, 0.2); padding: 0.75rem; border-radius: 8px;">
-                        <div style="font-size: 0.72rem; color: #94a3b8; font-weight: 600;">UNDER REVIEW</div>
-                        <div style="font-size: 1.3rem; font-weight: 800; color: #c084fc;">${rec_review:,.2f}</div>
+                    <div style="background: rgba(124, 58, 237, 0.07); border: 1px solid rgba(124, 58, 237, 0.2); padding: 0.75rem; border-radius: 8px;">
+                        <div style="font-size: 0.72rem; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">UNDER REVIEW</div>
+                        <div style="font-size: 1.3rem; font-weight: 800; color: #7C3AED; margin-top: 0.15rem;">₹{rec_review:,.2f}</div>
                     </div>
-                    <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); padding: 0.75rem; border-radius: 8px;">
-                        <div style="font-size: 0.72rem; color: #94a3b8; font-weight: 600;">RECOVERED</div>
-                        <div style="font-size: 1.3rem; font-weight: 800; color: #34d399;">${rec_settled:,.2f}</div>
+                    <div style="background: rgba(22, 163, 74, 0.07); border: 1px solid rgba(22, 163, 74, 0.2); padding: 0.75rem; border-radius: 8px;">
+                        <div style="font-size: 0.72rem; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">RECOVERED</div>
+                        <div style="font-size: 1.3rem; font-weight: 800; color: #16A34A; margin-top: 0.15rem;">₹{rec_settled:,.2f}</div>
                     </div>
                 </div>
             </div>
@@ -191,7 +199,7 @@ def render():
                 line=dict(color='#10b981', width=3),
                 fill='tozeroy', fillcolor='rgba(16, 185, 129, 0.15)'
             ))
-            fig_rec.update_layout(**_get_plotly_layout_defaults(), title="Cumulative Recovery vs Identified ($)", height=280)
+            fig_rec.update_layout(**_get_plotly_layout_defaults(), title="Cumulative Recovery vs Identified (₹)", height=280)
             st.plotly_chart(fig_rec, use_container_width=True)
         else:
             st.info("No recovery history available yet. Run an audit to identify recoverable lease overcharges.")
@@ -211,7 +219,7 @@ def render():
                 color_discrete_sequence=["#38bdf8", "#818cf8", "#f59e0b", "#f43f5e", "#c084fc"],
                 hole=0.45
             )
-            fig_cat.update_layout(**_get_plotly_layout_defaults(), title="Potential Recovery Distribution ($)", height=280)
+            fig_cat.update_layout(**_get_plotly_layout_defaults(), title="Potential Recovery Distribution (₹)", height=280)
             st.plotly_chart(fig_cat, use_container_width=True)
         else:
             st.info("No findings available yet. Upload leases and invoices to launch your first audit.")
@@ -239,7 +247,7 @@ def render():
                     "Risk Score": f"{rscore} / 100",
                     "Risk Tier": rtier,
                     "Findings": len(pfindings),
-                    "Potential Recovery": f"${p_rec:,.2f}"
+                    "Potential Recovery": f"₹{p_rec:,.2f}"
                 })
             st.dataframe(pd.DataFrame(risk_table_rows), use_container_width=True, hide_index=True)
         else:
@@ -253,15 +261,15 @@ def render():
                 st.markdown(
                     f"""
                     <div class="lg-card" style="padding: 0.85rem 1.1rem; margin-bottom: 0.5rem;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div style="font-weight: 700; color: #ffffff; font-size: 0.9rem;">⚠️ {rf.get('title') or rf.get('finding_type')}</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                            <div style="font-weight: 700; color: #111827; font-size: 0.9rem;">⚠️ {rf.get('title') or rf.get('finding_type')}</div>
                             <div>
                                 <span class="lg-badge {sev_badge}">{(rf.get('severity') or 'medium').upper()}</span>
                                 <span class="lg-badge lg-badge-gray">{rf.get('status', 'Open')}</span>
                             </div>
                         </div>
-                        <div style="font-size: 0.8rem; color: #94a3b8; margin-top: 0.25rem;">
-                            Potential Recovery: <strong style="color: #34d399;">${float(rf.get('amount', 0)):,.2f}</strong>
+                        <div style="font-size: 0.82rem; color: #475569; margin-top: 0.35rem; font-weight: 500;">
+                            Potential Recovery: <strong style="color: #16A34A;">₹{float(rf.get('amount', 0)):,.2f}</strong>
                         </div>
                     </div>
                     """,
@@ -275,10 +283,10 @@ def render():
         if total_properties == 0:
             st.markdown(
                 """
-                <div class="lg-card" style="padding: 0.9rem 1.1rem; border-left: 4px solid #38bdf8; margin-bottom: 0.6rem;">
-                    <div style="font-weight: 700; color: #ffffff; font-size: 0.9rem;">Add Your First Property</div>
-                    <div style="font-size: 0.78rem; color: #94a3b8;">Create property records to begin tracking commercial lease audits.</div>
-                    <div style="margin-top: 0.4rem;"><span class="lg-badge lg-badge-blue">Getting Started</span></div>
+                <div class="lg-card" style="padding: 0.9rem 1.1rem; border-left: 4px solid #2563EB; margin-bottom: 0.6rem;">
+                    <div style="font-weight: 700; color: #111827; font-size: 0.9rem;">Add Your First Property</div>
+                    <div style="font-size: 0.82rem; color: #475569; margin-top: 0.2rem; font-weight: 500;">Create property records to begin tracking commercial lease audits.</div>
+                    <div style="margin-top: 0.5rem;"><span class="lg-badge lg-badge-blue">Getting Started</span></div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -286,10 +294,10 @@ def render():
         elif total_audits == 0:
             st.markdown(
                 """
-                <div class="lg-card" style="padding: 0.9rem 1.1rem; border-left: 4px solid #f59e0b; margin-bottom: 0.6rem;">
-                    <div style="font-weight: 700; color: #ffffff; font-size: 0.9rem;">Run Initial Lease Audit</div>
-                    <div style="font-size: 0.78rem; color: #94a3b8;">Upload your lease contract and annual CAM statement to audit overcharges.</div>
-                    <div style="margin-top: 0.4rem;"><span class="lg-badge lg-badge-amber">Audit Recommended</span></div>
+                <div class="lg-card" style="padding: 0.9rem 1.1rem; border-left: 4px solid #D97706; margin-bottom: 0.6rem;">
+                    <div style="font-weight: 700; color: #111827; font-size: 0.9rem;">Run Initial Lease Audit</div>
+                    <div style="font-size: 0.82rem; color: #475569; margin-top: 0.2rem; font-weight: 500;">Upload your lease contract and annual CAM statement to audit overcharges.</div>
+                    <div style="margin-top: 0.5rem;"><span class="lg-badge lg-badge-amber">Audit Recommended</span></div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -297,10 +305,10 @@ def render():
         else:
             st.markdown(
                 """
-                <div class="lg-card" style="padding: 0.9rem 1.1rem; border-left: 4px solid #10b981; margin-bottom: 0.6rem;">
-                    <div style="font-weight: 700; color: #ffffff; font-size: 0.9rem;">All Audits Up To Date</div>
-                    <div style="font-size: 0.78rem; color: #94a3b8;">No pending action items for active property portfolio.</div>
-                    <div style="margin-top: 0.4rem;"><span class="lg-badge lg-badge-green">Optimal Status</span></div>
+                <div class="lg-card" style="padding: 0.9rem 1.1rem; border-left: 4px solid #16A34A; margin-bottom: 0.6rem;">
+                    <div style="font-weight: 700; color: #111827; font-size: 0.9rem;">All Audits Up To Date</div>
+                    <div style="font-size: 0.82rem; color: #475569; margin-top: 0.2rem; font-weight: 500;">No pending action items for active property portfolio.</div>
+                    <div style="margin-top: 0.5rem;"><span class="lg-badge lg-badge-green">Optimal Status</span></div>
                 </div>
                 """,
                 unsafe_allow_html=True

@@ -16,10 +16,15 @@ def _get_plotly_layout_defaults():
     return dict(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="#94a3b8", family="Plus Jakarta Sans"),
+        font=dict(color="#111827", family="Plus Jakarta Sans", size=12),
+        title_font=dict(color="#111827", family="Plus Jakarta Sans", size=14),
         margin=dict(l=20, r=20, t=30, b=20),
-        xaxis=dict(gridcolor="rgba(255,255,255,0.06)", showgrid=True),
-        yaxis=dict(gridcolor="rgba(255,255,255,0.06)", showgrid=True),
+        xaxis=dict(gridcolor="#F3E1CB", showgrid=True,
+                   tickfont=dict(color="#475569"),
+                   title_font=dict(color="#111827")),
+        yaxis=dict(gridcolor="#F3E1CB", showgrid=True,
+                   tickfont=dict(color="#475569"),
+                   title_font=dict(color="#111827")),
     )
 
 
@@ -122,7 +127,7 @@ def render():
             f"""
             <div class="lg-metric-card warning">
                 <div class="lg-metric-label">Potential Recovery</div>
-                <div class="lg-metric-value">${pot_rec:,.2f}</div>
+                <div class="lg-metric-value">₹{pot_rec:,.2f}</div>
                 <div class="lg-metric-trend lg-trend-neutral">{len(prop_findings)} Findings Flagged</div>
             </div>
             """,
@@ -133,7 +138,7 @@ def render():
             f"""
             <div class="lg-metric-card success">
                 <div class="lg-metric-label">Recovered Amount</div>
-                <div class="lg-metric-value">${rec_amt:,.2f}</div>
+                <div class="lg-metric-value">₹{rec_amt:,.2f}</div>
                 <div class="lg-metric-trend lg-trend-up">Credited to Rent</div>
             </div>
             """,
@@ -183,7 +188,7 @@ def render():
         st.markdown("### 💰 Financial Recovery Progress")
         ratio = min(1.0, rec_amt / max(1.0, pot_rec)) if pot_rec > 0 else 0.0
         st.progress(ratio)
-        st.write(f"**Recovered:** ${rec_amt:,.2f} of ${pot_rec:,.2f} identified")
+        st.write(f"**Recovered:** ₹{rec_amt:,.2f} of ₹{pot_rec:,.2f} identified")
 
     with tab_perf:
         st.markdown("### 📈 Property Risk Trend")

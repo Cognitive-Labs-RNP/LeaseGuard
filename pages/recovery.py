@@ -33,7 +33,7 @@ def render():
             f"""
             <div class="lg-metric-card">
                 <div class="lg-metric-label">1. Potential Identified</div>
-                <div class="lg-metric-value">${metrics['potential_recovery']:,.2f}</div>
+                <div class="lg-metric-value">₹{metrics['potential_recovery']:,.2f}</div>
                 <div class="lg-metric-trend lg-trend-neutral">Detected Claims</div>
             </div>
             """,
@@ -44,7 +44,7 @@ def render():
             f"""
             <div class="lg-metric-card warning">
                 <div class="lg-metric-label">2. Disputed Amount</div>
-                <div class="lg-metric-value">${metrics['disputed_amount']:,.2f}</div>
+                <div class="lg-metric-value">₹{metrics['disputed_amount']:,.2f}</div>
                 <div class="lg-metric-trend lg-trend-neutral">Formal Notice Sent</div>
             </div>
             """,
@@ -55,7 +55,7 @@ def render():
             f"""
             <div class="lg-metric-card purple">
                 <div class="lg-metric-label">3. Under Review</div>
-                <div class="lg-metric-value">${metrics['amount_under_review']:,.2f}</div>
+                <div class="lg-metric-value">₹{metrics['amount_under_review']:,.2f}</div>
                 <div class="lg-metric-trend lg-trend-neutral">In Negotiations</div>
             </div>
             """,
@@ -66,7 +66,7 @@ def render():
             f"""
             <div class="lg-metric-card success">
                 <div class="lg-metric-label">4. Total Recovered</div>
-                <div class="lg-metric-value">${metrics['recovered_amount']:,.2f}</div>
+                <div class="lg-metric-value">₹{metrics['recovered_amount']:,.2f}</div>
                 <div class="lg-metric-trend lg-trend-up">Settled Credits</div>
             </div>
             """,
@@ -90,9 +90,9 @@ def render():
             st.markdown(
                 f"""
                 <div class="lg-card" style="padding: 0.85rem; border-top: 4px solid {color}; text-align: center;">
-                    <div style="font-weight: 700; font-size: 0.9rem; color: #ffffff;">{stage}</div>
-                    <div style="font-size: 1.2rem; font-weight: 800; color: {color}; margin: 0.3rem 0;">${stage_sum:,.2f}</div>
-                    <div style="font-size: 0.75rem; color: #94a3b8;">{len(stage_claims)} Active Claim(s)</div>
+                    <div style="font-weight: 700; font-size: 0.9rem; color: #111827;">{stage}</div>
+                    <div style="font-size: 1.2rem; font-weight: 800; color: {color}; margin: 0.35rem 0 0.2rem;">₹{stage_sum:,.2f}</div>
+                    <div style="font-size: 0.75rem; color: #475569; font-weight: 600;">{len(stage_claims)} Active Claim(s)</div>
                 </div>
                 """,
                 unsafe_allow_html=True
@@ -117,7 +117,7 @@ def render():
         valid_list = sorted(list(VALID_RECOVERY_STATUSES))
         curr_idx = valid_list.index(cstatus) if cstatus in valid_list else 0
 
-        with st.expander(f"📌 {cid} - {cprop} ({cnotes[:30]}) - ${cclaim:,.2f}"):
+        with st.expander(f"📌 {cid} - {cprop} ({cnotes[:30]}) - ₹{cclaim:,.2f}"):
             ucol1, ucol2, ucol3 = st.columns(3)
             with ucol1:
                 st.write(f"**Dispute Notes:** {cnotes}")
@@ -125,7 +125,7 @@ def render():
             with ucol2:
                 new_status = st.selectbox("Update Status", valid_list, index=curr_idx, key=f"rec_stat_{i}")
             with ucol3:
-                rec_amt_input = st.number_input("Settled Amount ($)", value=crecovered, step=100.0, key=f"rec_amt_{i}")
+                rec_amt_input = st.number_input("Settled Amount (₹)", value=crecovered, step=100.0, key=f"rec_amt_{i}")
                 if st.button("Save Updates", key=f"rec_save_{i}"):
                     supabase.update_recovery_status(cid, new_status, rec_amt_input)
                     st.success(f"Claim {cid} updated to '{new_status}'!")

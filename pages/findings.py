@@ -78,17 +78,17 @@ def render():
                 f"""
                 <div class="lg-finding-card {sev}">
                     <div class="lg-finding-title">
-                        <span>⚠️ {f.get('title') or f.get('finding_type')} <span style="font-size: 0.85rem; color: #94a3b8; font-weight: 500;">({f.get('property_id', 'Property')})</span></span>
+                        <span>⚠️ {f.get('title') or f.get('finding_type')} <span style="font-size: 0.85rem; color: #64748B; font-weight: 500;">({f.get('property_id', 'Property')})</span></span>
                         <div>
                             <span class="lg-badge lg-badge-{sev_color}">{sev.upper()}</span>
                             <span class="lg-badge lg-badge-{stat_color}">{stat}</span>
                         </div>
                     </div>
-                    <div style="font-size: 0.9rem; color: #cbd5e1; margin-top: 0.5rem;">{f.get('description', '')}</div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; margin-top: 0.75rem; font-size: 0.85rem;">
-                        <div><strong style="color: #94a3b8;">Billed:</strong> <span style="color: #ffffff;">${billed:,.2f}</span></div>
-                        <div><strong style="color: #94a3b8;">Allowed:</strong> <span style="color: #ffffff;">${allowed:,.2f}</span></div>
-                        <div><strong style="color: #94a3b8;">Potential Recovery:</strong> <span style="color: #34d399; font-weight: 700;">${amt:,.2f}</span></div>
+                    <div style="font-size: 0.9rem; color: #475569; margin-top: 0.5rem; font-weight: 500; line-height: 1.55;">{f.get('description', '')}</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-top: 0.85rem; font-size: 0.85rem;">
+                        <div><strong style="color: #475569; font-weight: 600;">Billed:</strong> <span style="color: #111827; font-weight: 600;">₹{billed:,.2f}</span></div>
+                        <div><strong style="color: #475569; font-weight: 600;">Allowed:</strong> <span style="color: #111827; font-weight: 600;">₹{allowed:,.2f}</span></div>
+                        <div><strong style="color: #475569; font-weight: 600;">Potential Recovery:</strong> <span style="color: #16A34A; font-weight: 800;">₹{amt:,.2f}</span></div>
                     </div>
                     <div class="lg-evidence-box"><strong>Why this was flagged</strong><br>{f.get('description') or 'The billed amount did not align with the lease terms evaluated during the audit.'}</div>
                 </div>

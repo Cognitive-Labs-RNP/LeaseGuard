@@ -17,10 +17,16 @@ def _get_plotly_layout_defaults():
     return dict(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="#94a3b8", family="Plus Jakarta Sans"),
+        font=dict(color="#111827", family="Plus Jakarta Sans", size=12),
+        title_font=dict(color="#111827", family="Plus Jakarta Sans", size=14),
+        legend=dict(font=dict(color="#111827"), bgcolor="#FFFFFF", bordercolor="#F3E1CB", borderwidth=1),
         margin=dict(l=20, r=20, t=30, b=20),
-        xaxis=dict(gridcolor="rgba(255,255,255,0.06)", showgrid=True),
-        yaxis=dict(gridcolor="rgba(255,255,255,0.06)", showgrid=True),
+        xaxis=dict(gridcolor="#F3E1CB", showgrid=True,
+                   tickfont=dict(color="#475569"),
+                   title_font=dict(color="#111827")),
+        yaxis=dict(gridcolor="#F3E1CB", showgrid=True,
+                   tickfont=dict(color="#475569"),
+                   title_font=dict(color="#111827")),
     )
 
 
@@ -146,8 +152,8 @@ def render():
 
             st.markdown("### 📋 Multi-Property Summary Matrix")
             formatted_df = df_all.copy()
-            formatted_df["Potential Recovery"] = formatted_df["Potential Recovery"].apply(lambda x: f"${x:,.2f}")
-            formatted_df["Recovered Amount"] = formatted_df["Recovered Amount"].apply(lambda x: f"${x:,.2f}")
+            formatted_df["Potential Recovery"] = formatted_df["Potential Recovery"].apply(lambda x: f"₹{x:,.2f}")
+            formatted_df["Recovered Amount"] = formatted_df["Recovered Amount"].apply(lambda x: f"₹{x:,.2f}")
             formatted_df["SqFt"] = formatted_df["SqFt"].apply(lambda x: f"{x:,} sq ft")
             st.dataframe(formatted_df, use_container_width=True, hide_index=True)
 

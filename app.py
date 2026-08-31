@@ -81,77 +81,75 @@ def render_auth_screen():
         """,
         unsafe_allow_html=True,
     )
-    _, auth_column, _ = st.columns([1, 0.72, 1])
-    with auth_column:
-        with st.container(key="auth_card"):
-            login_tab, register_tab = st.tabs(["Sign In", "Create Account"])
+    with st.container(key="auth_card"):
+        login_tab, register_tab = st.tabs(["Sign In", "Create Account"])
 
-            with login_tab:
-                st.markdown("<div class='lg-auth-card-title'>Welcome back</div><div class='lg-auth-card-copy'>Sign in to your LeaseGuard account.</div>", unsafe_allow_html=True)
-                email = st.text_input("Email address", key="auth_login_email", placeholder="name@company.com")
-                password = st.text_input("Password", type="password", key="auth_login_password")
+        with login_tab:
+            st.markdown("<div class='lg-auth-card-title'>Welcome back</div><div class='lg-auth-card-copy'>Sign in to your LeaseGuard account.</div>", unsafe_allow_html=True)
+            email = st.text_input("Email address", key="auth_login_email", placeholder="name@company.com")
+            password = st.text_input("Password", type="password", key="auth_login_password")
 
-                if st.button("Sign In", use_container_width=True, type="primary"):
+            if st.button("Sign In", use_container_width=True, type="primary"):
+                try:
+                    user = login_user(email, password)
+                    st.session_state["authenticated_user"] = user
+                    st.session_state["user_id"] = user.get("id")
+                    if user.get("access_token"):
+                        st.session_state["access_token"] = user.get("access_token")
+                    if user.get("refresh_token"):
+                        st.session_state["refresh_token"] = user.get("refresh_token")
+                    st.rerun()
+                except (ValueError, RuntimeError) as e:
+                    st.error(str(e))
+                except Exception as e:
+                    st.error(f"Sign-in failed: {str(e)}")
+
+        with register_tab:
+            st.markdown("<div class='lg-auth-card-title'>Create your account</div><div class='lg-auth-card-copy'>Start reviewing lease compliance with LeaseGuard.</div>", unsafe_allow_html=True)
+            reg_email = st.text_input("Email address", key="auth_register_email", placeholder="name@company.com")
+            reg_password = st.text_input("Password", type="password", key="auth_register_password")
+            reg_confirm = st.text_input("Confirm password", type="password", key="auth_register_confirm")
+
+            if st.button("Create Account", use_container_width=True, type="primary"):
+                if reg_password != reg_confirm:
+                    st.error("Passwords do not match. Please enter them again.")
+                else:
                     try:
-                        user = login_user(email, password)
-                        st.session_state["authenticated_user"] = user
-                        st.session_state["user_id"] = user.get("id")
-                        if user.get("access_token"):
-                            st.session_state["access_token"] = user.get("access_token")
-                        if user.get("refresh_token"):
-                            st.session_state["refresh_token"] = user.get("refresh_token")
-                        st.rerun()
+                        result = register_user(reg_email, reg_password)
+                        if result.get("requires_confirmation"):
+                            st.info("Account created. Please check your email and confirm your account before logging in.")
+                        else:
+                            user = result.get("user") or result
+                            st.session_state["authenticated_user"] = user
+                            st.session_state["user_id"] = user.get("id")
+                            if result.get("access_token"):
+                                st.session_state["access_token"] = result.get("access_token")
+                            if result.get("refresh_token"):
+                                st.session_state["refresh_token"] = result.get("refresh_token")
+                            st.success("Account created successfully.")
+                            st.rerun()
                     except (ValueError, RuntimeError) as e:
                         st.error(str(e))
                     except Exception as e:
-                        st.error(f"Sign-in failed: {str(e)}")
+                        st.error(f"Account creation failed: {str(e)}")
 
-            with register_tab:
-                st.markdown("<div class='lg-auth-card-title'>Create your account</div><div class='lg-auth-card-copy'>Start reviewing lease compliance with LeaseGuard.</div>", unsafe_allow_html=True)
-                reg_email = st.text_input("Email address", key="auth_register_email", placeholder="name@company.com")
-                reg_password = st.text_input("Password", type="password", key="auth_register_password")
-                reg_confirm = st.text_input("Confirm password", type="password", key="auth_register_confirm")
+    # --- Demo Account Section ---
+    st.markdown("<div style='margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border);'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1rem; font-weight: 500;'>Try before signing up</div>", unsafe_allow_html=True)
 
-                if st.button("Create Account", use_container_width=True, type="primary"):
-                    if reg_password != reg_confirm:
-                        st.error("Passwords do not match. Please enter them again.")
-                    else:
-                        try:
-                            result = register_user(reg_email, reg_password)
-                            if result.get("requires_confirmation"):
-                                st.info("Account created. Please check your email and confirm your account before logging in.")
-                            else:
-                                user = result.get("user") or result
-                                st.session_state["authenticated_user"] = user
-                                st.session_state["user_id"] = user.get("id")
-                                if result.get("access_token"):
-                                    st.session_state["access_token"] = result.get("access_token")
-                                if result.get("refresh_token"):
-                                    st.session_state["refresh_token"] = result.get("refresh_token")
-                                st.success("Account created successfully.")
-                                st.rerun()
-                        except (ValueError, RuntimeError) as e:
-                            st.error(str(e))
-                        except Exception as e:
-                            st.error(f"Account creation failed: {str(e)}")
-
-        # --- Demo Account Section ---
-        st.markdown("<div style='margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid #334155;'></div>", unsafe_allow_html=True)
-        st.markdown("<div style='text-align: center; font-size: 0.85rem; color: #64748b; margin-bottom: 1rem;'>Try before signing up</div>", unsafe_allow_html=True)
-
-        if st.button("✨ Explore Demo Workspace", use_container_width=True, key="demo_account_btn"):
-            try:
-                user = login_demo_account()
-                st.session_state["authenticated_user"] = user
-                st.session_state["user_id"] = user.get("id")
-                st.session_state["access_token"] = user.get("access_token", "demo-access-token")
-                st.session_state["refresh_token"] = user.get("refresh_token", "demo-refresh-token")
-                st.success("Demo workspace loaded. Explore the complete LeaseGuard platform.")
-                st.rerun()
-            except ValueError as ve:
-                st.info(f"ℹ️ Demo access is not configured on this deployment.")
-            except RuntimeError as re:
-                st.error("Unable to start the demo account. Please try again or sign up for an account.")
+    if st.button("✨ Explore Demo Workspace", use_container_width=True, key="demo_account_btn"):
+        try:
+            user = login_demo_account()
+            st.session_state["authenticated_user"] = user
+            st.session_state["user_id"] = user.get("id")
+            st.session_state["access_token"] = user.get("access_token", "demo-access-token")
+            st.session_state["refresh_token"] = user.get("refresh_token", "demo-refresh-token")
+            st.success("Demo workspace loaded. Explore the complete LeaseGuard platform.")
+            st.rerun()
+        except ValueError as ve:
+            st.info(f"ℹ️ Demo access is not configured on this deployment.")
+        except RuntimeError as re:
+            st.error("Unable to start the demo account. Please try again or sign up for an account.")
 
     st.markdown("<div class='lg-auth-footer'>Secure enterprise lease intelligence</div>", unsafe_allow_html=True)
 

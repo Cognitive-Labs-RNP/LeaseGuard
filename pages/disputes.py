@@ -36,7 +36,7 @@ def render():
     selected_idx = st.selectbox(
         "Target Discrepancy Finding",
         range(len(findings_list)),
-        format_func=lambda i: f"{findings_list[i].get('property_id', 'Property')} - {findings_list[i].get('title') or findings_list[i].get('finding_type')} (${float(findings_list[i].get('amount', 0)):,.2f})"
+        format_func=lambda i: f"{findings_list[i].get('property_id', 'Property')} - {findings_list[i].get('title') or findings_list[i].get('finding_type')} (₹{float(findings_list[i].get('amount', 0)):,.2f})"
     )
 
     finding = findings_list[selected_idx]

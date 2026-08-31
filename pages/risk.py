@@ -16,7 +16,9 @@ def _get_plotly_layout_defaults():
     return dict(
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
-        font=dict(color="#94a3b8", family="Plus Jakarta Sans"),
+        font=dict(color="#111827", family="Plus Jakarta Sans", size=12),
+        title_font=dict(color="#111827", family="Plus Jakarta Sans", size=14),
+        legend=dict(font=dict(color="#111827"), bgcolor="#FFFFFF", bordercolor="#F3E1CB", borderwidth=1),
         margin=dict(l=20, r=20, t=30, b=20),
     )
 
@@ -101,7 +103,7 @@ def render():
                 r=scores_active, theta=categories, fill='toself', name='Lease Risk Profile',
                 line=dict(color='#f43f5e', width=2)
             ))
-            fig_radar.update_layout(**_get_plotly_layout_defaults(), polar=dict(bgcolor="rgba(0,0,0,0)", radialaxis=dict(visible=True, range=[0, 100], gridcolor="rgba(255,255,255,0.1)"), angularaxis=dict(gridcolor="rgba(255,255,255,0.1)")), height=360, showlegend=False)
+            fig_radar.update_layout(**_get_plotly_layout_defaults(), polar=dict(bgcolor="rgba(0,0,0,0)", radialaxis=dict(visible=True, range=[0, 100], gridcolor="#E8D5BD"), angularaxis=dict(gridcolor="#E8D5BD")), height=360, showlegend=False)
             st.plotly_chart(fig_radar, use_container_width=True)
         else:
             empty_state("Category detail unavailable", "Risk category detail is shown when it is available in the saved assessment.", "○")

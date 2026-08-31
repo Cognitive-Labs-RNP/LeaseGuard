@@ -1,408 +1,1595 @@
 /* ==========================================================================
-   LeaseGuard AI - Modern Dark Enterprise SaaS Design System
+   LeaseGuard AI — Phase 8 Enterprise Design System
+   Orange accent / warm cream / white cards / charcoal sidebar
    ========================================================================== */
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
+/* ==========================================================================
+   1. DESIGN TOKENS
+   ========================================================================== */
 :root {
-    --bg-primary: #0b0f19;
-    --bg-secondary: #0f172a;
-    --card-bg: #1e293b;
-    --card-border: rgba(255, 255, 255, 0.08);
-    --card-hover: rgba(255, 255, 255, 0.16);
+    /* Workspace surfaces */
+    --bg:              #FFF7ED;
+    --surface:         #FFFFFF;
+    --surface-muted:   #FFF1E0;
 
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
+    /* Text */
+    --text-primary:    #111827;
+    --text-secondary:  #475569;
+    --text-muted:      #64748B;
 
-    --accent-blue: #38bdf8;
-    --accent-indigo: #818cf8;
-    --accent-green: #10b981;
-    --accent-amber: #f59e0b;
-    --accent-rose: #f43f5e;
-    --accent-purple: #c084fc;
+    /* Borders & dividers */
+    --border:          #F3E1CB;
+    --border-strong:   #E2CBAF;
+
+    /* Sidebar — Dark Charcoal */
+    --sidebar:           #171717;
+    --sidebar-surface:   #242424;
+    --sidebar-hover:     #2E2E2E;
+    --sidebar-text:      #F1F5F9;
+    --sidebar-muted:     #A8B0BA;
+
+    /* Orange brand accent */
+    --orange-primary:    #F97316;
+    --orange-dark:       #EA580C;
+    --orange-darker:     #C2410C;
+    --orange-light:      #FFEDD5;
+    --orange-border:     #FED7AA;
+
+    /* Semantic status */
+    --success:           #16A34A;
+    --success-light:     #DCFCE7;
+    --warning:           #D97706;
+    --warning-light:     #FEF3C7;
+    --danger:            #DC2626;
+    --danger-light:      #FEE2E2;
+    --info:              #2563EB;
+    --info-light:        #DBEAFE;
 }
 
+/* ==========================================================================
+   2. GLOBAL BASE & APP LAYOUT
+   ========================================================================== */
 html, body, [class*="css"] {
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 .stApp {
-    background-color: var(--bg-primary) !important;
+    background-color: var(--bg) !important;
+    background-image:
+        radial-gradient(ellipse 80% 50% at 50% -10%, rgba(249, 115, 22, 0.10) 0%, transparent 55%),
+        radial-gradient(ellipse 50% 35% at 100% 0%, rgba(249, 115, 22, 0.06) 0%, transparent 60%);
+    background-attachment: fixed;
 }
 
-/* Main Container Padding */
+/* Main content area — flex centering container that works whether sidebar is open or closed */
+[data-testid="stAppViewContainer"] {
+    background-color: var(--bg) !important;
+    width: 100% !important;
+}
+
+/* The non-sidebar section (main column) should fill remaining space so auto-margins center correctly */
+[data-testid="stAppViewContainer"] > section:not([data-testid="stSidebar"]) {
+    background: var(--bg) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    flex: 1 1 0% !important;
+    overflow: visible !important;
+}
+[data-testid="stAppViewContainer"] > section:not([data-testid="stSidebar"]) > div:first-child {
+    width: 100% !important;
+    display: block !important;
+}
+
+/* Main block-container — centered via auto margins, never hardcoded left offset */
 .block-container {
-    padding-top: 1.35rem !important;
-    padding-bottom: 3rem !important;
-    padding-left: 2rem !important;
-    padding-right: 2rem !important;
-    max-width: 1480px;
+    padding-top: 1.75rem !important;
+    padding-bottom: 3.5rem !important;
+    padding-left: 1.75rem !important;
+    padding-right: 1.75rem !important;
+    max-width: 1320px !important;
+    width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    display: block !important;
 }
 
-#MainMenu, header[data-testid="stHeader"] { visibility: hidden; }
+@media (max-width: 900px) {
+    .block-container {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        padding-top: 1.25rem !important;
+    }
+}
 
-/* --- Hero & Section Headers --- */
+/* Prevent horizontal overflow globally */
+[data-testid="stAppViewContainer"],
+.stApp,
+.block-container {
+    overflow-x: hidden !important;
+}
+
+/* ==========================================================================
+   3. STREAMLIT HEADER — Keep sidebar controls VISIBLE & CLICKABLE (CRITICAL)
+   ========================================================================== */
+
+/* Hide hamburger menu dots but NEVER hide the sidebar expand/collapse controls */
+#MainMenu { visibility: hidden; }
+[data-testid="stToolbar"] { visibility: hidden; }
+
+/* The stHeader MUST stay visible — it holds the collapsed sidebar open/expand button */
+header[data-testid="stHeader"] {
+    visibility: visible !important;
+    display: block !important;
+    background: transparent !important;
+    height: auto !important;
+    min-height: 3rem !important;
+    position: relative !important;
+    z-index: 999990 !important;
+    pointer-events: none !important;
+}
+header[data-testid="stHeader"] > * {
+    pointer-events: auto !important;
+}
+
+/* ---------- Sidebar expand/reopen button (when sidebar is COLLAPSED) ---------- */
+header[data-testid="stHeader"] [data-testid="collapsedControl"] {
+    visibility: visible !important;
+    display: flex !important;
+    opacity: 1 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: var(--sidebar) !important;
+    color: #fff !important;
+    width: 52px !important;
+    height: 52px !important;
+    border-radius: 0 0 12px 0 !important;
+    box-shadow: 2px 2px 14px rgba(0,0,0,0.18) !important;
+    z-index: 999999 !important;
+    position: relative !important;
+    left: 0 !important;
+    top: 0 !important;
+    pointer-events: auto !important;
+    clip: auto !important;
+    clip-path: none !important;
+    overflow: visible !important;
+}
+header[data-testid="stHeader"] [data-testid="collapsedControl"] button {
+    width: 48px !important;
+    height: 48px !important;
+    color: var(--orange-primary) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+header[data-testid="stHeader"] [data-testid="collapsedControl"] svg,
+header[data-testid="stHeader"] [data-testid="collapsedControl"] svg * {
+    color: var(--orange-primary) !important;
+    stroke: var(--orange-primary) !important;
+    fill: var(--orange-primary) !important;
+    opacity: 1 !important;
+}
+
+/* Fallback — any header button with headerNoPadding kind */
+header[data-testid="stHeader"] button[data-testid="stBaseButton-headerNoPadding"],
+header[data-testid="stHeader"] button[kind="headerNoPadding"] {
+    background: var(--sidebar) !important;
+    color: var(--orange-primary) !important;
+    width: 48px !important;
+    height: 48px !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+    border-radius: 0 0 12px 0 !important;
+    box-shadow: 2px 2px 14px rgba(0,0,0,0.15) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: flex !important;
+    z-index: 999999 !important;
+    position: relative !important;
+    pointer-events: auto !important;
+}
+header[data-testid="stHeader"] button[data-testid="stBaseButton-headerNoPadding"] svg *,
+header[data-testid="stHeader"] button[kind="headerNoPadding"] span[color] {
+    color: var(--orange-primary) !important;
+    fill: var(--orange-primary) !important;
+    stroke: var(--orange-primary) !important;
+    opacity: 1 !important;
+}
+
+/* ---------- Sidebar collapse chevron (when sidebar is OPEN) ---------- */
+[data-testid="stSidebarCollapseButton"] {
+    visibility: visible !important;
+    display: flex !important;
+    opacity: 1 !important;
+    align-items: center !important;
+    justify-content: center !important;
+    z-index: 99999 !important;
+    position: relative !important;
+    top: 0 !important;
+    right: 0 !important;
+    pointer-events: auto !important;
+    clip: auto !important;
+    overflow: visible !important;
+    margin: 0.5rem 0.5rem 0 auto !important;
+}
+[data-testid="stSidebarCollapseButton"] button {
+    width: 34px !important;
+    height: 34px !important;
+    min-width: 34px !important;
+    min-height: 34px !important;
+    border-radius: 8px !important;
+    color: var(--sidebar-text) !important;
+    background: rgba(255,255,255,0.06) !important;
+    transition: all 0.15s ease !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+[data-testid="stSidebarCollapseButton"] button:hover {
+    background: rgba(249, 115, 22, 0.22) !important;
+    color: var(--orange-primary) !important;
+}
+[data-testid="stSidebarCollapseButton"] svg,
+[data-testid="stSidebarCollapseButton"] svg * {
+    color: var(--sidebar-text) !important;
+    stroke: currentColor !important;
+    fill: currentColor !important;
+    opacity: 1 !important;
+}
+[data-testid="stSidebarCollapseButton"] button:hover svg {
+    color: var(--orange-primary) !important;
+}
+
+/* ==========================================================================
+   4. SIDEBAR — Dark Charcoal Navigation with Orange Accents
+   ========================================================================== */
+[data-testid="stSidebar"] {
+    background-color: var(--sidebar) !important;
+    border-right: 0 !important;
+    min-width: 240px !important;
+    width: 240px !important;
+    max-width: 280px !important;
+}
+[data-testid="stSidebar"] > div:first-child {
+    background-color: var(--sidebar) !important;
+}
+[data-testid="stSidebar"] * {
+    color: var(--sidebar-text);
+}
+
+/* Sidebar scrollbar */
+[data-testid="stSidebar"] ::-webkit-scrollbar-track { background: var(--sidebar); }
+[data-testid="stSidebar"] ::-webkit-scrollbar-thumb { background: var(--sidebar-surface); border-radius: 4px; }
+[data-testid="stSidebar"] ::-webkit-scrollbar-thumb:hover { background: var(--sidebar-hover); }
+
+/* ---------- Sidebar Brand ---------- */
+.sidebar-brand-box {
+    padding: 1.1rem 0.6rem 1.15rem 0.85rem;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 0.25rem;
+    position: relative;
+    padding-top: 2.75rem;
+}
+.sidebar-brand-title {
+    font-size: 1.08rem;
+    font-weight: 800;
+    color: #FFFFFF;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    line-height: 1.15;
+}
+.sidebar-brand-title::before {
+    content: "";
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    border-radius: 7px;
+    background: linear-gradient(135deg, var(--orange-primary) 0%, var(--orange-dark) 100%);
+    position: relative;
+    box-shadow: 0 3px 10px rgba(249, 115, 22, 0.35);
+}
+.sidebar-brand-title span { color: #FFFFFF; }
+.sidebar-brand-desc {
+    font-size: 0.72rem;
+    color: var(--sidebar-muted);
+    margin-top: 0.4rem;
+    font-weight: 500;
+    line-height: 1.45;
+    opacity: 0.9;
+}
+
+/* ---------- Sidebar Section Labels ---------- */
+.sidebar-section-title,
+.sidebar-user-label {
+    font-size: 0.64rem;
+    font-weight: 800;
+    letter-spacing: 0.11em;
+    color: var(--sidebar-muted);
+    margin: 1.05rem 0 0.4rem 0.3rem;
+    text-transform: uppercase;
+    opacity: 0.85;
+}
+
+/* ---------- Account Section ---------- */
+[data-testid="stSidebar"] .stCaption,
+[data-testid="stSidebar"] small {
+    color: var(--sidebar-muted) !important;
+    font-size: 0.78rem !important;
+    padding-left: 0.2rem;
+}
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"] {
+    padding-left: 0.1rem !important;
+    margin-bottom: 0.1rem !important;
+}
+
+/* Sidebar button (Logout) */
+[data-testid="stSidebar"] .stButton button {
+    background: rgba(255,255,255,0.04) !important;
+    border: 1px solid rgba(255,255,255,0.14) !important;
+    box-shadow: none !important;
+    color: var(--sidebar-text) !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    padding: 0.45rem 0.85rem !important;
+    min-height: 2.25rem !important;
+    height: auto !important;
+    line-height: 1.3 !important;
+    transition: all 0.15s ease !important;
+}
+[data-testid="stSidebar"] .stButton button:hover {
+    background: rgba(220, 38, 38, 0.14) !important;
+    border-color: rgba(220, 38, 38, 0.4) !important;
+    color: #FCA5A5 !important;
+}
+
+/* ---------- Navigation Radio Items ---------- */
+[data-testid="stSidebar"] [data-testid="stRadio"] {
+    margin: 0;
+    padding: 0 0.15rem;
+}
+[data-testid="stSidebar"] [data-testid="stRadio"] > div {
+    gap: 2px;
+    display: flex;
+    flex-direction: column;
+}
+[data-testid="stSidebar"] [data-testid="stRadio"] label {
+    border-left: 3px solid transparent;
+    border-radius: 6px;
+    margin: 1px 0;
+    padding: 0.5rem 0.6rem !important;
+    cursor: pointer;
+    transition: background 0.12s ease, border-color 0.12s ease;
+    width: 100% !important;
+    align-items: center;
+    display: flex;
+    min-height: 2rem !important;
+}
+[data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
+    background: rgba(255,255,255,0.05);
+}
+[data-testid="stSidebar"] [data-testid="stRadio"] label p {
+    color: var(--sidebar-text);
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1.3;
+    margin: 0;
+}
+
+/* ACTIVE nav item */
+[data-testid="stSidebar"] [data-testid="stRadio"] label:has(input:checked) {
+    background: rgba(249, 115, 22, 0.13);
+    border-left-color: var(--orange-primary);
+}
+[data-testid="stSidebar"] [data-testid="stRadio"] label:has(input:checked) p {
+    color: #FFFFFF;
+    font-weight: 700;
+}
+
+/* Hide radio circle visually but keep accessible */
+[data-testid="stSidebar"] [data-testid="stRadio"] input[type="radio"] {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+    pointer-events: none;
+}
+
+/* ---------- Sidebar Dividers & Status ---------- */
+[data-testid="stSidebar"] hr {
+    border-color: rgba(255,255,255,0.08) !important;
+    margin: 1rem 0.3rem 0.75rem !important;
+}
+
+[data-testid="stSidebar"] .lg-status-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+[data-testid="stSidebar"] .lg-dot-green { background-color: #22C55E; box-shadow: 0 0 7px rgba(34,197,94,0.55); }
+[data-testid="stSidebar"] .lg-dot-amber { background-color: #F59E0B; box-shadow: 0 0 7px rgba(245,158,11,0.55); }
+[data-testid="stSidebar"] .lg-dot-red   { background-color: #EF4444; box-shadow: 0 0 7px rgba(239,68,68,0.55); }
+
+/* Sidebar footer */
+.sidebar-footer-box {
+    margin-top: 1.1rem;
+    padding: 0.75rem 0.85rem;
+    background: rgba(255,255,255,0.04);
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.08);
+    font-size: 0.73rem;
+    color: var(--sidebar-muted);
+    line-height: 1.55;
+}
+.sidebar-footer-box strong {
+    color: #E2E8F0;
+    font-weight: 700;
+}
+.sidebar-footer-box span[style*="color: #38bdf8"] {
+    color: var(--orange-primary) !important;
+    font-weight: 600;
+}
+
+/* ==========================================================================
+   5. AUTHENTICATION SCREEN — Login / Register (CRITICAL FIX)
+   ========================================================================== */
+
+/* Logged-out view: make block-container narrower (but still full-mobile-width) and centered */
+.stApp:has(.lg-auth-brand) .block-container,
+.stApp:has([data-testid="stAppViewContainer"] .st-key-auth_card) .block-container {
+    max-width: 560px !important;
+    min-width: 0 !important;
+    width: 100% !important;
+    padding-top: 3rem !important;
+    padding-left: 1.25rem !important;
+    padding-right: 1.25rem !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    display: block !important;
+}
+
+/* Brand block */
+.lg-auth-brand {
+    margin: 0 auto 1.4rem;
+    text-align: center;
+}
+.lg-auth-mark {
+    align-items: center;
+    background: linear-gradient(135deg, var(--orange-primary) 0%, var(--orange-dark) 100%);
+    border-radius: 12px;
+    color: #fff;
+    display: flex;
+    font-size: 0.9rem;
+    font-weight: 800;
+    height: 44px;
+    justify-content: center;
+    letter-spacing: 0.04em;
+    margin: 0 auto 0.85rem;
+    width: 44px;
+    box-shadow: 0 6px 20px rgba(249, 115, 22, 0.32);
+}
+.lg-auth-product {
+    color: var(--text-primary);
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+}
+.lg-auth-product span {
+    color: var(--orange-primary);
+}
+.lg-auth-tagline {
+    color: var(--text-secondary);
+    font-size: 0.86rem;
+    margin-top: 0.35rem;
+    line-height: 1.55;
+    font-weight: 500;
+}
+.lg-auth-footer {
+    color: var(--text-secondary);
+    font-size: 0.82rem;
+    margin: 1.25rem auto 0;
+    text-align: center;
+    line-height: 1.5;
+}
+
+/* ------ The authentication card itself ------ */
+.st-key-auth_card,
+[class*="st-key-auth_card"] {
+    background: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 16px 44px rgba(234, 88, 12, 0.13) !important;
+    padding: 1.8rem 1.9rem 1.25rem !important;
+    margin: 0 auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+}
+/* Ensure the inner container within the keyed auth card is also full width */
+.st-key-auth_card > div,
+[class*="st-key-auth_card"] > div,
+.st-key-auth_card [data-testid="stVerticalBlock"],
+[class*="st-key-auth_card"] [data-testid="stVerticalBlock"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+}
+
+/* Auth card headings */
+.lg-auth-card-title {
+    color: var(--text-primary);
+    font-size: 1.1rem;
+    font-weight: 800;
+    margin: 0.6rem 0 0.2rem;
+    line-height: 1.3;
+}
+.lg-auth-card-copy {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.55;
+    margin-bottom: 1.1rem;
+    font-weight: 500;
+}
+
+/* ------ TABS inside auth card: proper height, no compression ------ */
+.st-key-auth_card .stTabs [data-baseweb="tab-list"],
+[class*="st-key-auth_card"] .stTabs [data-baseweb="tab-list"] {
+    gap: 0;
+    background: var(--surface-muted);
+    border-radius: 10px;
+    padding: 4px;
+    margin-bottom: 1.25rem;
+    border-bottom: 0 !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+}
+.st-key-auth-card .stTabs [data-baseweb="tab"],
+.st-key-auth_card .stTabs [data-baseweb="tab"],
+[class*="st-key-auth_card"] .stTabs [data-baseweb="tab"] {
+    height: 2.5rem !important;
+    min-height: 2.5rem !important;
+    border-radius: 7px !important;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.88rem;
+    padding: 0 1.1rem !important;
+    transition: background 0.12s ease, color 0.12s ease;
+    white-space: nowrap !important;
+    overflow: visible !important;
+    flex: 1 1 0% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    line-height: 1.2 !important;
+}
+.st-key-auth_card .stTabs [data-baseweb="tab"]:hover {
+    color: var(--text-primary);
+    background: rgba(249, 115, 22, 0.06);
+}
+.st-key-auth_card .stTabs [aria-selected="true"],
+[class*="st-key-auth_card"] .stTabs [aria-selected="true"] {
+    color: var(--orange-darker) !important;
+    background: #FFFFFF !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    font-weight: 700 !important;
+    border-bottom: 0 !important;
+}
+
+/* Auth tab content — full width within card */
+.st-key-auth_card [data-testid="stTabContent"],
+[class*="st-key-auth_card"] [data-testid="stTabContent"],
+.st-key-auth_card [data-baseweb="tab-panel"],
+[class*="st-key-auth_card"] [data-baseweb="tab-panel"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+}
+.st-key-auth_card [data-baseweb="tab-panel"] > div,
+[class*="st-key-auth_card"] [data-baseweb="tab-panel"] > div,
+.st-key-auth_card [data-testid="stTabContent"] > div,
+[class*="st-key-auth_card"] [data-testid="stTabContent"] > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+}
+
+/* ------ INPUTS inside auth card: full width, proper height, no clip ------ */
+.st-key-auth_card .stTextInput,
+[class*="st-key-auth_card"] .stTextInput,
+.st-key-auth_card [data-testid="stTextInput"],
+[class*="st-key-auth_card"] [data-testid="stTextInput"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin-bottom: 0.9rem !important;
+    box-sizing: border-box !important;
+}
+.st-key-auth_card .stTextInput label,
+[class*="st-key-auth_card"] .stTextInput label {
+    margin-bottom: 0.35rem !important;
+    display: block !important;
+}
+.st-key-auth_card .stTextInput input,
+[class*="st-key-auth_card"] .stTextInput input,
+.st-key-auth_card [data-testid="stTextInputRootElement"] input,
+[class*="st-key-auth_card"] [data-testid="stTextInputRootElement"] input {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    min-height: 2.75rem !important;
+    height: 2.75rem !important;
+    padding: 0.5rem 0.9rem !important;
+    font-size: 0.92rem !important;
+    line-height: 1.4 !important;
+    box-sizing: border-box !important;
+    border-radius: 9px !important;
+}
+
+/* Password visibility button inside auth card inputs — keep small, native size */
+.st-key-auth_card .stTextInput [data-testid="stInputClearButton"],
+.st-key-auth_card .stTextInput button,
+[class*="st-key-auth_card"] .stTextInput button,
+.st-key-auth_card [data-testid="stTextInputRootElement"] button,
+[class*="st-key-auth_card"] [data-testid="stTextInputRootElement"] button {
+    width: auto !important;
+    height: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 0.25rem !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    font-size: 0.85rem !important;
+}
+
+/* ------ Primary button inside auth card: full width, proper height ------ */
+.st-key-auth_card .stButton,
+[class*="st-key-auth_card"] .stButton {
+    width: 100% !important;
+    margin-top: 0.35rem !important;
+}
+.st-key-auth_card .stButton > button[kind="primary"],
+[class*="st-key-auth_card"] .stButton > button[kind="primary"] {
+    width: 100% !important;
+    min-height: 2.85rem !important;
+    height: 2.85rem !important;
+    font-size: 0.92rem !important;
+    font-weight: 700 !important;
+    border-radius: 10px !important;
+}
+
+/* Demo section divider below auth card */
+.st-key-auth_card + div [style*="border-top: 1px solid #334155"],
+.st-key-auth_card + div + div [style*="border-top: 1px solid #334155"] {
+    border-top-color: var(--border) !important;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+}
+[style*="font-size: 0.85rem; color: #64748b; margin-bottom: 1rem"] {
+    color: var(--text-secondary) !important;
+    font-weight: 500;
+}
+
+/* Demo account button */
+.stButton button[key="demo_account_btn"] {
+    min-height: 2.7rem !important;
+    height: 2.7rem !important;
+    border-color: var(--orange-border) !important;
+    color: var(--orange-dark) !important;
+    font-weight: 700 !important;
+    font-size: 0.9rem !important;
+    background: var(--orange-light) !important;
+    border-radius: 10px !important;
+}
+.stButton button[key="demo_account_btn"]:hover {
+    background: #FFE4D0 !important;
+    border-color: var(--orange-primary) !important;
+    color: var(--orange-darker) !important;
+}
+
+/* ==========================================================================
+   6. HEADERS & SECTION HEADERS
+   ========================================================================== */
 .lg-header {
     margin-bottom: 1.5rem;
     padding-bottom: 0.75rem;
-    border-bottom: 1px solid var(--card-border);
+    border-bottom: 1px solid var(--border);
 }
 
 .lg-page-header {
     margin: 0 0 1.5rem;
     padding: 0 0 1rem;
-    border-bottom: 1px solid var(--card-border);
+    border-bottom: 1px solid var(--border);
 }
 
 .lg-eyebrow {
-    color: var(--accent-blue);
-    font-size: 0.69rem;
+    color: var(--orange-dark);
+    font-size: 0.7rem;
     font-weight: 800;
-    letter-spacing: 0.12em;
-    margin-bottom: 0.35rem;
+    letter-spacing: 0.13em;
+    margin-bottom: 0.4rem;
     text-transform: uppercase;
+    line-height: 1.3;
 }
 
 .lg-title {
-    font-size: 1.85rem;
+    font-size: 1.8rem;
     font-weight: 800;
     letter-spacing: -0.03em;
-    color: #f8fafc;
-    margin-bottom: 0.25rem;
+    color: var(--text-primary);
+    margin-bottom: 0.3rem;
     display: flex;
     align-items: center;
     gap: 0.6rem;
+    line-height: 1.2;
 }
 
 .lg-subtitle {
-    font-size: 0.92rem;
+    font-size: 0.93rem;
     color: var(--text-secondary);
-    font-weight: 400;
+    font-weight: 500;
+    line-height: 1.55;
+    max-width: 680px;
 }
 
-.lg-section-header { margin: 1.25rem 0 0.7rem; }
-.lg-section-title { color: var(--text-primary); font-size: 1.04rem; font-weight: 700; letter-spacing: -0.01em; }
-.lg-section-description { margin-top: 0.25rem; color: var(--text-secondary); font-size: 0.82rem; }
+.lg-section-header {
+    margin: 1.35rem 0 0.75rem;
+}
+.lg-section-title {
+    color: var(--text-primary);
+    font-size: 1.06rem;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+.lg-section-description {
+    margin-top: 0.3rem;
+    color: var(--text-secondary);
+    font-size: 0.84rem;
+    line-height: 1.55;
+    font-weight: 500;
+}
 
+/* Streamlit native markdown headings — fix contrast */
+h1, h2, h3, h4, h5, h6 {
+    color: var(--text-primary) !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em;
+}
+h1 { font-weight: 800 !important; }
+
+/* Streamlit default caption text is often too pale */
+[data-testid="stCaptionContainer"],
+small, .stCaption {
+    color: var(--text-secondary) !important;
+    font-weight: 500 !important;
+}
+
+/* ==========================================================================
+   7. EMPTY STATES
+   ========================================================================== */
 .lg-empty-state {
     align-items: flex-start;
-    background: rgba(30, 41, 59, 0.56);
-    border: 1px dashed rgba(148, 163, 184, 0.28);
+    background: var(--surface);
+    border: 1px dashed var(--border-strong);
     border-radius: 12px;
     display: flex;
-    gap: 0.8rem;
+    gap: 0.85rem;
     margin: 0.5rem 0 1rem;
-    padding: 1.05rem 1.15rem;
+    padding: 1.2rem 1.3rem;
 }
-.lg-empty-icon { color: var(--accent-blue); font-size: 1.35rem; line-height: 1.2; }
-.lg-empty-title { color: var(--text-primary); font-size: 0.9rem; font-weight: 700; }
-.lg-empty-copy { color: var(--text-secondary); font-size: 0.82rem; line-height: 1.5; margin-top: 0.18rem; }
+.lg-empty-icon {
+    color: var(--orange-primary);
+    font-size: 1.45rem;
+    line-height: 1.2;
+    flex-shrink: 0;
+    font-weight: 700;
+}
+.lg-empty-title {
+    color: var(--text-primary);
+    font-size: 0.93rem;
+    font-weight: 700;
+    line-height: 1.3;
+}
+.lg-empty-copy {
+    color: var(--text-secondary);
+    font-size: 0.84rem;
+    line-height: 1.55;
+    margin-top: 0.25rem;
+    font-weight: 500;
+}
 
-/* --- Custom Cards & Containers --- */
+/* ==========================================================================
+   8. CARDS — Content / Finding / Metric
+   ========================================================================== */
 .lg-card {
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: 12px;
-    padding: 1.25rem 1.5rem;
-    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.4);
-    transition: all 0.2s ease-in-out;
+    padding: 1.15rem 1.25rem;
+    box-shadow: 0 2px 8px rgba(16, 24, 40, 0.04);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
     margin-bottom: 1rem;
+    color: var(--text-primary) !important;
 }
-
 .lg-card:hover {
-    border-color: var(--card-hover);
+    border-color: var(--border-strong);
+    box-shadow: 0 6px 18px rgba(16, 24, 40, 0.06);
+}
+.lg-card > div {
+    color: var(--text-primary) !important;
 }
 
-/* Metric Display Cards */
-.lg-metric-card {
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 12px;
-    min-height: 128px;
+/* ---------- Finding cards ---------- */
+.lg-finding-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--danger);
+    border-radius: 10px;
     padding: 1.15rem 1.2rem;
+    margin-bottom: 0.9rem;
+    box-shadow: 0 2px 8px rgba(16, 24, 40, 0.04);
+}
+.lg-finding-card.medium { border-left-color: var(--warning); }
+.lg-finding-card.low    { border-left-color: var(--info); }
+
+.lg-finding-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.lg-evidence-box {
+    background: var(--surface-muted);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 0.95rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 0.75rem;
+    line-height: 1.6;
+    font-weight: 500;
+}
+
+/* ---------- Metric / KPI cards ---------- */
+.lg-metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    min-height: 122px;
+    padding: 1.05rem 1.1rem;
     position: relative;
     overflow: hidden;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-    transition: transform 0.2s ease, border-color 0.2s ease;
+    box-shadow: 0 2px 8px rgba(16, 24, 40, 0.04);
+    transition: transform 0.18s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
-
 .lg-metric-card:hover {
     transform: translateY(-2px);
-    border-color: rgba(255, 255, 255, 0.18);
+    border-color: var(--border-strong);
+    box-shadow: 0 8px 20px rgba(16, 24, 40, 0.07);
 }
-
 .lg-metric-card::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
-    width: 4px;
-    height: 100%;
-    background: var(--accent-blue);
+    width: 100%;
+    height: 3px;
+    background: var(--orange-primary);
 }
-
-.lg-metric-card.success::before { background: var(--accent-green); }
-.lg-metric-card.warning::before { background: var(--accent-amber); }
-.lg-metric-card.danger::before { background: var(--accent-rose); }
-.lg-metric-card.purple::before { background: var(--accent-indigo); }
+.lg-metric-card.success::before { background: var(--success); }
+.lg-metric-card.warning::before { background: var(--warning); }
+.lg-metric-card.danger::before  { background: var(--danger); }
+.lg-metric-card.purple::before  { background: #7C3AED; }
 
 .lg-metric-label {
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--text-secondary);
-    margin-bottom: 0.35rem;
+    margin-bottom: 0.4rem;
+    line-height: 1.3;
 }
-
 .lg-metric-value {
-    font-size: 1.8rem;
+    font-size: 1.65rem;
     font-weight: 800;
-    color: #ffffff;
+    color: var(--text-primary);
     letter-spacing: -0.03em;
     line-height: 1.2;
+    word-break: break-word;
 }
-
 .lg-metric-trend {
-    font-size: 0.78rem;
+    font-size: 0.77rem;
     font-weight: 500;
-    margin-top: 0.35rem;
+    margin-top: 0.45rem;
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
+    color: var(--text-secondary);
+    line-height: 1.4;
 }
 
-.lg-trend-up { color: var(--accent-green); }
-.lg-trend-neutral { color: var(--text-secondary); }
-.lg-trend-down { color: var(--accent-rose); }
+@media (max-width: 900px) {
+    .lg-metric-value { font-size: 1.35rem; }
+}
 
-/* --- Badges & Pills --- */
+.lg-trend-up      { color: var(--success); font-weight: 600; }
+.lg-trend-neutral { color: var(--text-secondary); }
+.lg-trend-down    { color: var(--danger); font-weight: 600; }
+
+/* ==========================================================================
+   9. BADGES
+   ========================================================================== */
 .lg-badge {
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
-    padding: 0.25rem 0.65rem;
+    padding: 0.24rem 0.62rem;
     border-radius: 9999px;
-    font-size: 0.75rem;
+    font-size: 0.73rem;
     font-weight: 700;
     letter-spacing: 0.02em;
+    line-height: 1.4;
+}
+.lg-badge-blue   { background: var(--info-light);    color: var(--info);    border: 1px solid #BFDBFE; }
+.lg-badge-green  { background: var(--success-light); color: #087443;         border: 1px solid #BBF7D0; }
+.lg-badge-amber  { background: var(--warning-light); color: #92400E;         border: 1px solid #FDE68A; }
+.lg-badge-red    { background: var(--danger-light);  color: #991B1B;         border: 1px solid #FECACA; }
+.lg-badge-purple { background: #F3EFFF;               color: #5D38B5;         border: 1px solid #DDD6FE; }
+.lg-badge-gray   { background: var(--surface-muted);  color: #344054;         border: 1px solid var(--border); }
+
+/* ==========================================================================
+   10. BUTTONS — Primary / Secondary
+   ========================================================================== */
+
+/* Primary (orange) */
+.stButton > button[kind="primary"] {
+    background: var(--orange-primary) !important;
+    border: 1px solid var(--orange-primary) !important;
+    color: #FFFFFF !important;
+    font-weight: 700 !important;
+    font-size: 0.88rem !important;
+    border-radius: 9px !important;
+    padding: 0.5rem 1.05rem !important;
+    min-height: 2.5rem !important;
+    height: auto !important;
+    line-height: 1.3 !important;
+    box-shadow: 0 2px 6px rgba(249, 115, 22, 0.2) !important;
+    transition: all 0.15s ease !important;
+    width: auto !important;
+}
+.stButton > button[kind="primary"]:hover:not(:disabled) {
+    background: var(--orange-dark) !important;
+    border-color: var(--orange-dark) !important;
+    box-shadow: 0 4px 12px rgba(234, 88, 12, 0.32) !important;
+    transform: translateY(-1px);
+}
+.stButton > button[kind="primary"]:active:not(:disabled) {
+    background: var(--orange-darker) !important;
+    border-color: var(--orange-darker) !important;
+    transform: translateY(0);
+}
+.stButton > button[kind="primary"]:disabled {
+    background: #FED7AA !important;
+    border-color: #FED7AA !important;
+    color: #fff !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+    opacity: 0.9;
+}
+/* Focus ring for accessibility */
+.stButton > button:focus-visible {
+    outline: 2px solid var(--orange-primary) !important;
+    outline-offset: 2px !important;
+    box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.18) !important;
 }
 
-.lg-badge-blue { background-color: rgba(56, 189, 248, 0.15); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
-.lg-badge-green { background-color: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
-.lg-badge-amber { background-color: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
-.lg-badge-red { background-color: rgba(244, 63, 94, 0.15); color: #f87171; border: 1px solid rgba(244, 63, 94, 0.3); }
-.lg-badge-purple { background-color: rgba(192, 132, 252, 0.15); color: #c084fc; border: 1px solid rgba(192, 132, 252, 0.3); }
-.lg-badge-gray { background-color: rgba(100, 116, 139, 0.15); color: #94a3b8; border: 1px solid rgba(100, 116, 139, 0.3); }
+/* Secondary */
+.stButton > button[kind="secondary"] {
+    background: var(--surface) !important;
+    border: 1px solid var(--border-strong) !important;
+    border-radius: 9px !important;
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+    font-size: 0.88rem !important;
+    min-height: 2.5rem !important;
+    height: auto !important;
+    line-height: 1.3 !important;
+    padding: 0.5rem 1.05rem !important;
+    transition: all 0.15s ease !important;
+    width: auto !important;
+}
+.stButton > button[kind="secondary"]:hover:not(:disabled) {
+    background: var(--surface-muted) !important;
+    border-color: #C7B299 !important;
+    color: var(--text-primary) !important;
+}
+.stButton > button[kind="secondary"]:disabled {
+    opacity: 0.6 !important;
+    cursor: not-allowed !important;
+    background: var(--surface) !important;
+}
 
-/* --- Finding Cards --- */
-.lg-finding-card {
-    background: #1e293b;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-left: 4px solid var(--accent-rose);
+/* Form submit — same sizing */
+.stForm [data-testid="stFormSubmitButton"] button {
+    min-height: 2.5rem !important;
+    font-weight: 700 !important;
+}
+
+/* ==========================================================================
+   11. INPUTS — Text / Textarea / Select / Number
+   SCOPED CAREFULLY — don't size password-visibility or tiny buttons
+   ========================================================================== */
+
+/* Widget labels */
+label[data-testid="stWidgetLabel"] {
+    display: block !important;
+    margin-bottom: 0.35rem !important;
+}
+label[data-testid="stWidgetLabel"] p,
+label[data-testid="stWidgetLabel"] {
+    color: var(--text-primary) !important;
+    font-size: 0.82rem !important;
+    font-weight: 700 !important;
+    line-height: 1.3 !important;
+}
+
+/* Target the main INPUT element only (not password-eye buttons, not select arrows) */
+[data-testid="stTextInputRootElement"] input,
+[data-testid="stNumberInputContainer"] input,
+[data-testid="stTextAreaRootElement"] textarea,
+.stTextInput input,
+.stNumberInput input,
+.stTextArea textarea {
+    background-color: var(--surface) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-strong) !important;
+    border-radius: 9px !important;
+    font-size: 0.9rem !important;
+    line-height: 1.4 !important;
+    min-height: 2.5rem !important;
+    height: auto !important;
+    padding: 0.5rem 0.85rem !important;
+    box-sizing: border-box !important;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease !important;
+    font-family: inherit !important;
+    font-weight: 500 !important;
+}
+.stTextArea textarea {
+    min-height: 6rem !important;
+    line-height: 1.5 !important;
+    padding: 0.7rem 0.85rem !important;
+}
+
+/* Focus state for accessibility */
+[data-testid="stTextInputRootElement"]:focus-within input,
+[data-testid="stNumberInputContainer"]:focus-within input,
+[data-testid="stTextAreaRootElement"]:focus-within textarea,
+.stTextInput input:focus,
+.stNumberInput input:focus,
+.stTextArea textarea:focus {
+    border-color: var(--orange-primary) !important;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.14) !important;
+    outline: none !important;
+}
+
+/* Sizing wrapper — don't let Streamlit crunch inputs */
+[data-testid="stTextInputRootElement"],
+[data-testid="stNumberInputContainer"],
+[data-testid="stTextAreaRootElement"],
+.stTextInput [data-baseweb="input"],
+.stNumberInput [data-baseweb="input"],
+.stTextArea [data-baseweb="textarea"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    display: block !important;
+    box-sizing: border-box !important;
+    background: transparent !important;
+    border: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+}
+
+/* Input suffix/prefix wrapper (holds eye-icon button) — keep native */
+[data-testid="stTextInputRootElement"] [data-testid="stInputSuffix"],
+[data-testid="stTextInputRootElement"] [data-testid="stInputPrefix"],
+.stTextInput [data-testid="stInputSuffix"],
+.stTextInput [data-testid="stInputPrefix"] {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 0.35rem !important;
+    width: auto !important;
+    min-width: 0 !important;
+    height: auto !important;
+}
+/* Tiny inline buttons inside inputs (eye, clear) — reset any global sizes */
+[data-testid="stTextInputRootElement"] [data-testid="stInputSuffix"] button,
+[data-testid="stTextInputRootElement"] [data-testid="stInputPrefix"] button,
+.stTextInput button[data-testid="stInputClearButton"],
+.stTextInput [data-testid="stBaseButton-element-border"],
+.stNumberInput button {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0.2rem 0.3rem !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    width: auto !important;
+    height: auto !important;
+    border-radius: 4px !important;
+    font-size: 0.8rem !important;
+    color: var(--text-secondary) !important;
+}
+
+/* Placeholder — readable but muted */
+::placeholder {
+    color: var(--text-muted) !important;
+    opacity: 1 !important;
+    font-weight: 500 !important;
+}
+
+/* ------ Select / Dropdown ------ */
+[data-baseweb="select"] > div,
+div[data-baseweb="select"] > div {
+    background-color: var(--surface) !important;
+    color: var(--text-primary) !important;
+    border: 1px solid var(--border-strong) !important;
+    border-radius: 9px !important;
+    min-height: 2.5rem !important;
+    height: auto !important;
+    padding: 0.15rem 0.6rem !important;
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease !important;
+}
+[data-baseweb="select"]:focus-within > div {
+    border-color: var(--orange-primary) !important;
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.14) !important;
+    outline: none !important;
+}
+
+/* Select dropdown list */
+div[data-baseweb="popover"] ul {
+    background: var(--surface) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 10px 28px rgba(16, 24, 40, 0.13) !important;
+    padding: 0.3rem !important;
+}
+div[data-baseweb="popover"] li {
+    color: var(--text-primary) !important;
+    padding: 0.45rem 0.65rem !important;
+    border-radius: 6px !important;
+    font-size: 0.88rem !important;
+    font-weight: 500 !important;
+}
+div[data-baseweb="popover"] li:hover {
+    background: var(--surface-muted) !important;
+}
+div[data-baseweb="popover"] li[aria-selected="true"] {
+    background: var(--orange-light) !important;
+    color: var(--orange-darker) !important;
+    font-weight: 600 !important;
+}
+
+/* ------ File uploader ------ */
+.stFileUploader {
+    background: var(--surface-muted);
+    border: 1px dashed var(--border-strong);
     border-radius: 10px;
-    padding: 1.25rem;
-    margin-bottom: 1rem;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+    padding: 0.5rem;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+.stFileUploader:hover {
+    border-color: var(--orange-primary);
+    background: var(--orange-light);
+}
+.stFileUploader [data-testid="stDropzoneInstructions"],
+.stFileUploader [data-testid="stDropzoneInstructions"] *,
+.stFileUploader small {
+    color: var(--text-secondary) !important;
+}
+.stFileUploader section {
+    background: transparent !important;
+    border: 0 !important;
+    min-height: 6rem !important;
 }
 
-.lg-finding-card.medium { border-left-color: var(--accent-amber); }
-.lg-finding-card.low { border-left-color: var(--accent-blue); }
+/* ------ Expander / Details ------ */
+[data-testid="stExpander"] {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 0.65rem;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.03);
+}
+[data-testid="stExpander"] details {
+    background: transparent;
+    border: 0;
+    padding: 0;
+}
+[data-testid="stExpander"] summary,
+[data-testid="stExpander"] [data-testid="stExpanderHeader"] {
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+    font-size: 0.9rem !important;
+    padding: 0.7rem 0.9rem !important;
+    background: transparent !important;
+}
+[data-testid="stExpander"][open] {
+    border-color: var(--border-strong);
+}
 
-.lg-finding-title {
-    font-size: 1.05rem;
-    font-weight: 700;
-    color: #ffffff;
+/* Checkbox / Radio accent color (outside sidebar) */
+:not([data-testid="stSidebar"]) [data-baseweb="checkbox"] input:checked + div,
+:not([data-testid="stSidebar"]) .stCheckbox input:checked + div {
+    background-color: var(--orange-primary) !important;
+    border-color: var(--orange-primary) !important;
+}
+:not([data-testid="stSidebar"]) [data-baseweb="radio"] input:checked + div,
+:not([data-testid="stSidebar"]) .stRadio input:checked + div {
+    background-color: var(--orange-primary) !important;
+    border-color: var(--orange-primary) !important;
+}
+
+/* Slider */
+[data-testid="stThumbValue"] {
+    color: var(--orange-primary) !important;
+    font-weight: 700 !important;
+}
+div[data-baseweb="slider"] [role="slider"] {
+    background-color: var(--orange-primary) !important;
+    border-color: var(--orange-primary) !important;
+    box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.18);
+}
+div[data-baseweb="slider"] > div > div:nth-child(1) > div:nth-child(1) {
+    background: var(--orange-primary) !important;
+}
+
+/* Number input step arrows */
+.stNumberInput button[aria-label="Increase"],
+.stNumberInput button[aria-label="Decrease"] {
+    background: var(--surface-muted) !important;
+    border: 1px solid var(--border) !important;
+    box-shadow: none !important;
+    color: var(--text-secondary) !important;
+    width: 2rem !important;
+    min-width: 2rem !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 0.15rem !important;
+}
+
+/* ==========================================================================
+   12. TABS
+   ========================================================================== */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 2px;
+    background-color: transparent;
+    border-bottom: 1px solid var(--border);
+    padding: 0 0.25rem;
     display: flex;
-    justify-content: space-between;
+    align-items: flex-end;
+}
+.stTabs [data-baseweb="tab"] {
+    height: 2.75rem !important;
+    min-height: 2.75rem !important;
+    border-radius: 8px 8px 0 0;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 0.87rem;
+    padding: 0 1.05rem !important;
+    transition: background 0.12s ease, color 0.12s ease;
+    white-space: nowrap;
+    overflow: visible !important;
+    display: inline-flex;
     align-items: center;
 }
-
-.lg-evidence-box {
-    background: #0f172a;
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: 6px;
-    padding: 0.75rem 1rem;
-    font-size: 0.83rem;
-    color: #cbd5e1;
-    font-family: 'JetBrains Mono', monospace;
-    margin-top: 0.75rem;
-    line-height: 1.5;
+.stTabs [data-baseweb="tab"]:hover {
+    color: var(--text-primary);
+    background: var(--surface-muted);
+}
+.stTabs [aria-selected="true"] {
+    color: var(--text-primary) !important;
+    background: var(--orange-light) !important;
+    border-bottom: 2px solid var(--orange-primary) !important;
+    font-weight: 700 !important;
+}
+.stTabs [data-baseweb="tab-highlight"] {
+    background-color: var(--orange-primary) !important;
+    height: 2.5px !important;
+}
+.stTabs [data-baseweb="tab-border"] {
+    background-color: var(--border) !important;
 }
 
-/* --- Status Indicator Dots --- */
+/* ==========================================================================
+   13. DATAFRAMES / TABLES
+   ========================================================================== */
+.stDataFrame {
+    border: 1px solid var(--border) !important;
+    border-radius: 10px !important;
+    overflow: hidden;
+    background: var(--surface) !important;
+    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.03);
+}
+.stDataFrame [data-testid="stTableStyledTable"] {
+    background: var(--surface) !important;
+}
+.stDataFrame table thead tr th {
+    background: var(--surface-muted) !important;
+    color: var(--text-secondary) !important;
+    font-weight: 700 !important;
+    font-size: 0.78rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--border) !important;
+    padding: 0.6rem 0.8rem !important;
+}
+.stDataFrame table tbody tr td {
+    color: var(--text-primary) !important;
+    border-bottom: 1px solid var(--border) !important;
+    font-size: 0.86rem;
+    padding: 0.55rem 0.8rem !important;
+    font-weight: 500;
+    vertical-align: middle;
+}
+.stDataFrame table tbody tr:hover > td {
+    background: rgba(249, 115, 22, 0.04) !important;
+}
+
+/* Native Streamlit table too */
+.stTable table {
+    background: var(--surface) !important;
+}
+.stTable table th {
+    color: var(--text-secondary) !important;
+    background: var(--surface-muted) !important;
+    font-weight: 700 !important;
+}
+.stTable table td {
+    color: var(--text-primary) !important;
+    font-weight: 500;
+}
+
+/* ==========================================================================
+   14. ALERTS — Info / Success / Warning / Error
+   ========================================================================== */
+div[data-testid="stAlert"] {
+    border-radius: 10px;
+    font-size: 0.87rem;
+    padding: 0.75rem 0.95rem;
+    border: 1px solid transparent;
+    color: inherit !important;
+    font-weight: 500;
+    line-height: 1.5;
+}
+div[data-testid="stAlertContainer"] {
+    border-radius: 10px !important;
+}
+div[data-testid="stAlert"][kind="info"] {
+    background: var(--info-light);
+    border-color: #93C5FD;
+    color: #1E40AF;
+}
+div[data-testid="stAlert"][kind="success"] {
+    background: var(--success-light);
+    border-color: #86EFAC;
+    color: #14532D;
+}
+div[data-testid="stAlert"][kind="warning"] {
+    background: var(--warning-light);
+    border-color: #FCD34D;
+    color: #78350F;
+}
+div[data-testid="stAlert"][kind="error"] {
+    background: var(--danger-light);
+    border-color: #FCA5A5;
+    color: #7F1D1D;
+}
+/* Streamlit alert headings and strong text */
+div[data-testid="stAlert"] strong,
+div[data-testid="stAlert"] b {
+    color: inherit !important;
+    font-weight: 700;
+}
+
+/* ==========================================================================
+   15. PROGRESS / LOADING
+   ========================================================================== */
+[data-testid="stProgress"] > div {
+    background: var(--surface-muted) !important;
+    height: 0.55rem !important;
+    border-radius: 9999px !important;
+    overflow: hidden;
+}
+[data-testid="stProgress"] > div > div > div {
+    background-color: var(--orange-primary) !important;
+    border-radius: 9999px !important;
+}
+
+[data-testid="stSpinner"],
+.stSpinner {
+    color: var(--orange-primary) !important;
+}
+[data-testid="stStatusWidget"] {
+    border-radius: 10px !important;
+    border: 1px solid var(--border) !important;
+}
+
+/* ==========================================================================
+   16. STATUS DOTS (outside sidebar)
+   ========================================================================== */
 .lg-status-dot {
     display: inline-block;
     width: 8px;
     height: 8px;
     border-radius: 50%;
     margin-right: 6px;
+    vertical-align: middle;
 }
-.lg-dot-green { background-color: #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.6); }
-.lg-dot-amber { background-color: #f59e0b; box-shadow: 0 0 8px rgba(245, 158, 11, 0.6); }
-.lg-dot-red { background-color: #f43f5e; box-shadow: 0 0 8px rgba(244, 63, 94, 0.6); }
+.lg-dot-green { background-color: var(--success); box-shadow: 0 0 8px rgba(22,163,74,0.5); }
+.lg-dot-amber { background-color: var(--warning); box-shadow: 0 0 8px rgba(217,119,6,0.5); }
+.lg-dot-red   { background-color: var(--danger);  box-shadow: 0 0 8px rgba(220,38,38,0.5); }
 
-/* --- Sidebar Styling --- */
-[data-testid="stSidebar"] {
-    background-color: #0f172a !important;
-    border-right: 1px solid var(--card-border) !important;
+/* ==========================================================================
+   17. PLOTLY / CHART CONTAINERS
+   ========================================================================== */
+.js-plotly-plot,
+.plot-container,
+[data-testid="stPlotlyChart"] {
+    background: var(--surface) !important;
+    border-radius: 10px !important;
 }
-
-.sidebar-brand-box {
-    padding: 1rem 0.75rem 1.25rem 0.75rem;
-    border-bottom: 1px solid var(--card-border);
-    margin-bottom: 1.25rem;
+[data-testid="stPlotlyChart"] > div {
+    background: var(--surface) !important;
 }
-
-.sidebar-brand-title {
-    font-size: 1.25rem;
-    font-weight: 800;
-    color: #ffffff;
-    letter-spacing: -0.02em;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+/* Ensure plotly modebar sits above content */
+.js-plotly-plot .modebar {
+    z-index: 10;
 }
 
-.sidebar-brand-desc {
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-    margin-top: 0.2rem;
-    font-weight: 500;
-}
-
-.sidebar-section-title {
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-muted);
-    margin: 1.2rem 0 0.5rem 0.5rem;
-}
-
-[data-testid="stSidebar"] [data-testid="stRadio"] { margin-top: -0.25rem; }
-[data-testid="stSidebar"] [data-testid="stRadio"] label { padding: 0.12rem 0; }
-[data-testid="stSidebar"] [data-testid="stRadio"] label p { color: #cbd5e1; font-size: 0.84rem; font-weight: 600; }
-[data-testid="stSidebar"] [data-testid="stRadio"] label:has(input:checked) {
-    background: rgba(56, 189, 248, 0.12);
-    border-radius: 7px;
-    padding-left: 0.35rem;
-}
-
-.sidebar-footer-box {
-    margin-top: 2rem;
-    padding: 0.75rem;
-    background: #1e293b;
-    border-radius: 8px;
-    border: 1px solid var(--card-border);
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-}
-
-/* --- Streamlit Widget Overrides for Dark SaaS Theme --- */
-div[data-baseweb="select"] > div {
-    background-color: #1e293b !important;
-    color: #ffffff !important;
-    border-color: rgba(255, 255, 255, 0.12) !important;
-    border-radius: 8px !important;
-}
-
-.stTextInput input, .stTextArea textarea, .stNumberInput input {
-    background-color: #1e293b !important;
-    color: #ffffff !important;
-    border-color: rgba(255, 255, 255, 0.12) !important;
-    border-radius: 8px !important;
-}
-
-.stTabs [data-baseweb="tab-list"] {
-    gap: 8px;
-    background-color: transparent;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.stTabs [data-baseweb="tab"] {
-    height: 42px;
-    border-radius: 8px 8px 0 0;
-    color: var(--text-secondary);
-    font-weight: 600;
-    padding: 0 16px;
-}
-
-.stTabs [aria-selected="true"] {
-    color: #38bdf8 !important;
-    border-bottom: 2px solid #38bdf8 !important;
-    background-color: rgba(56, 189, 248, 0.05);
-}
-
-.stButton > button[kind="primary"] {
-    background: linear-gradient(135deg, #0284c7 0%, #2563eb 100%) !important;
-    color: #ffffff !important;
-    font-weight: 700 !important;
-    border: none !important;
-    border-radius: 8px !important;
-    padding: 0.5rem 1rem !important;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
-    transition: all 0.2s ease !important;
-}
-
-.stButton > button[kind="secondary"] {
-    background: #1e293b !important;
-    border: 1px solid rgba(148, 163, 184, 0.28) !important;
-    border-radius: 8px !important;
-    color: #e2e8f0 !important;
-    font-weight: 650 !important;
-}
-
-label[data-testid="stWidgetLabel"] p { color: #cbd5e1 !important; font-size: 0.82rem !important; font-weight: 650 !important; }
-.stFileUploader { background: rgba(30, 41, 59, 0.45); border-radius: 10px; padding: 0.5rem; }
-
-.stButton > button[kind="primary"]:hover {
-    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.5) !important;
-    transform: translateY(-1px);
-}
-
-.stDataFrame {
-    border: 1px solid var(--card-border) !important;
-    border-radius: 8px !important;
-    overflow: hidden;
-}
-
-/* Custom scrollbars */
+/* ==========================================================================
+   18. GLOBAL SCROLLBARS
+   ========================================================================== */
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
 ::-webkit-scrollbar-track {
-    background: #0f172a;
+    background: var(--bg);
 }
 ::-webkit-scrollbar-thumb {
-    background: #334155;
+    background: #D4C4AE;
     border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-    background: #475569;
+    background: #B8A58C;
 }
 
-/* ========================================================================
-   Phase 7.1 refresh — light enterprise workspace with navy navigation
-   ======================================================================== */
-:root { --bg-primary:#f5f7fb; --bg-secondary:#0f172a; --card-bg:#fff; --card-border:#dfe5ee; --card-hover:#b8c8e2; --text-primary:#172033; --text-secondary:#667085; --text-muted:#98a2b3; --accent-blue:#1769e0; --accent-indigo:#6941c6; --accent-green:#14804a; --accent-amber:#b54708; --accent-rose:#c4323f; --accent-purple:#6941c6; }
-header[data-testid="stHeader"] { background:transparent !important; visibility:visible !important; } [data-testid="stToolbar"] { visibility:hidden; }
-html, body, [class*="css"] { color:var(--text-primary); }
-.stApp { background:#f5f7fb !important; }
-.block-container { padding-top:1.45rem !important; }
-.lg-page-header { border-bottom-color:#dfe5ee; margin-bottom:1.35rem; }.lg-title { color:#172033; font-size:1.75rem; }.lg-eyebrow { color:#1769e0; }.lg-section-title { color:#172033; }.lg-section-description,.lg-subtitle { color:#667085; }
-.lg-card, .lg-metric-card { background:#fff; border-color:#dfe5ee; box-shadow:0 2px 7px rgba(16,24,40,.045); }.lg-card { padding:1.15rem 1.25rem; }.lg-metric-card { min-height:124px; padding:1.1rem 1.15rem; }.lg-card:hover,.lg-metric-card:hover { border-color:#b8c8e2; box-shadow:0 7px 18px rgba(16,24,40,.075); }.lg-metric-card::before { height:3px; width:100%; }.lg-metric-value,.lg-finding-title { color:#172033; }.lg-metric-label { color:#667085; }.lg-metric-trend { color:#667085; }.lg-trend-up { color:#14804a; }.lg-trend-down { color:#c4323f; }
-.lg-empty-state { background:#fff; border-color:#b9c6d8; }.lg-empty-title { color:#172033; }.lg-empty-copy { color:#667085; }.lg-empty-icon { color:#1769e0; }
-.lg-badge-blue { background:#eaf2ff;color:#175cd3;border-color:#c7dcff; }.lg-badge-green { background:#eaf7ef;color:#087443;border-color:#b7e6ca; }.lg-badge-amber { background:#fff4df;color:#9c4c08;border-color:#f6d39a; }.lg-badge-red { background:#fff0f1;color:#b42332;border-color:#f4c2c6; }.lg-badge-purple { background:#f3efff;color:#5d38b5;border-color:#d9cdfd; }.lg-badge-gray { background:#f2f4f7;color:#475467;border-color:#dfe3e9; }
-.lg-finding-card { background:#fff; border-color:#dfe5ee; box-shadow:0 2px 7px rgba(16,24,40,.04); }.lg-evidence-box { background:#f7f9fc; border-color:#e1e7f0; color:#475467; }
-[data-testid="stSidebar"] { background:#0f172a !important; border-right:0 !important; min-width:236px; } [data-testid="stSidebar"] * { color:#d0d5dd; }.sidebar-brand-box { border-bottom-color:rgba(255,255,255,.12); margin-bottom:1rem; padding:.8rem .55rem 1rem; }.sidebar-brand-title { font-size:1.08rem; }.sidebar-brand-desc { color:#98a2b3; }.sidebar-section-title,.sidebar-user-label { color:#7f8ca3; font-size:.64rem; font-weight:800; letter-spacing:.1em; margin:1rem 0 .35rem .25rem; text-transform:uppercase; }
-[data-testid="stSidebar"] [data-testid="stRadio"] { margin:0; } [data-testid="stSidebar"] [data-testid="stRadio"] label { border-left:2px solid transparent; border-radius:5px; margin:1px 0; padding:.22rem .38rem; } [data-testid="stSidebar"] [data-testid="stRadio"] label p { color:#cbd5e1; font-size:.82rem; font-weight:600; } [data-testid="stSidebar"] [data-testid="stRadio"] label:has(input:checked) { background:rgba(31,111,235,.22); border-left-color:#35b6b0; } [data-testid="stSidebar"] [data-testid="stRadio"] label:has(input:checked) p { color:#fff; } [data-testid="stSidebar"] .stButton button { background:transparent !important; border-color:rgba(255,255,255,.2) !important; box-shadow:none !important; color:#d0d5dd !important; }.sidebar-footer-box { background:rgba(255,255,255,.055); border-color:rgba(255,255,255,.1); color:#98a2b3; margin-top:1.1rem; }
-label[data-testid="stWidgetLabel"] p { color:#344054 !important; font-size:.8rem !important; font-weight:700 !important; } div[data-baseweb="select"] > div,.stTextInput input,.stTextArea textarea,.stNumberInput input { background:#fff !important; border-color:#cbd5e1 !important; color:#172033 !important; }.stTextInput input:focus,.stTextArea textarea:focus,.stNumberInput input:focus { border-color:#1769e0 !important; box-shadow:0 0 0 3px rgba(23,105,224,.12) !important; }.stButton > button[kind="primary"] { background:#1769e0 !important; border-color:#1769e0 !important; min-height:2.45rem; }.stButton > button[kind="primary"]:hover { background:#1259bd !important; }.stButton > button[kind="secondary"] { background:#fff !important; border-color:#cbd5e1 !important; color:#344054 !important; }.stTabs [data-baseweb="tab-list"] { border-bottom-color:#dfe5ee; }.stTabs [data-baseweb="tab"] { color:#667085; }.stTabs [aria-selected="true"] { background:#eef5ff; border-bottom-color:#1769e0 !important; color:#175cd3 !important; }.stFileUploader { background:#f8fafc; border:1px dashed #b8c6d8; }.stDataFrame { border-color:#dfe5ee !important; } div[data-testid="stAlert"] { border-radius:8px; font-size:.84rem; padding:.6rem .8rem; } details { background:#fff; border:1px solid #dfe5ee; border-radius:10px; }
-.lg-card [style*="color: #ffffff"],.lg-finding-card [style*="color: #ffffff"] { color:#172033 !important; }.lg-card [style*="color: #94a3b8"],.lg-finding-card [style*="color: #94a3b8"] { color:#667085 !important; }
-.lg-card div[style*="background:"], .lg-finding-card div[style*="background:"] { background:#f8fafc !important; border-color:#dfe5ee !important; }
-[data-testid="stAppViewContainer"]:has(.st-key-auth_card) { background:radial-gradient(circle at 50% 0%,#e8f1ff 0,#f5f7fb 42%,#f5f7fb 100%); }.lg-auth-brand { margin:6vh auto 1.25rem; text-align:center; }.lg-auth-mark { align-items:center; background:#0f172a; border-radius:10px; color:#fff; display:flex; font-size:.82rem; font-weight:800; height:36px; justify-content:center; letter-spacing:.04em; margin:0 auto .65rem; width:36px; }.lg-auth-product { color:#0f172a; font-size:1.42rem; font-weight:800; letter-spacing:-.035em; }.lg-auth-product span { color:#1769e0; }.lg-auth-tagline,.lg-auth-footer { color:#667085; font-size:.81rem; margin-top:.25rem; }.lg-auth-footer { margin:1.1rem auto 0; text-align:center; } [class*="st-key-auth_card"] { background:#fff; border:1px solid #dbe3ef; border-radius:14px; box-shadow:0 12px 30px rgba(16,24,40,.1); padding:1.25rem 1.35rem .7rem; }.lg-auth-card-title { color:#172033; font-size:1.06rem; font-weight:800; margin:.6rem 0 .2rem; }.lg-auth-card-copy { color:#667085; font-size:.82rem; line-height:1.45; margin-bottom:1rem; }
-@media (max-width:900px) { .block-container { padding-left:1rem !important; padding-right:1rem !important; }.lg-metric-value { font-size:1.35rem; } }
+/* ==========================================================================
+   19. INLINE COLOR OVERRIDES — Fix legacy "white text on white cards"
+   This catches all inline light/dark text inside white cards and rewrites
+   them for high contrast. NO functional change — presentation only.
+   ========================================================================== */
 
+/* Any element inside .lg-card / .lg-finding-card / .lg-metric-card with explicit inline
+   light colors must become readable text colors since cards are now WHITE */
+.lg-card [style*="color: #ffffff"],
+.lg-card [style*="color: #FFFFFF"],
+.lg-card [style*="color:#ffffff"],
+.lg-card [style*="color:#FFFFFF"],
+.lg-card [style*="color: #f8fafc"],
+.lg-card [style*="color: #f1f5f9"],
+.lg-card [style*="color: #e2e8f0"],
+.lg-card [style*="color: #cbd5e1"],
+.lg-finding-card [style*="color: #ffffff"],
+.lg-finding-card [style*="color: #FFFFFF"],
+.lg-finding-card [style*="color:#ffffff"],
+.lg-finding-card [style*="color:#FFFFFF"],
+.lg-finding-card [style*="color: #f8fafc"],
+.lg-finding-card [style*="color: #f1f5f9"],
+.lg-finding-card [style*="color: #e2e8f0"],
+.lg-finding-card [style*="color: #cbd5e1"],
+.lg-metric-card [style*="color: #ffffff"],
+.lg-metric-card [style*="color: #FFFFFF"],
+.lg-metric-card [style*="color:#ffffff"],
+.lg-metric-card [style*="color:#FFFFFF"],
+.lg-metric-card [style*="color: #f8fafc"],
+.lg-metric-card [style*="color: #f1f5f9"],
+.lg-metric-card [style*="color: #e2e8f0"],
+.lg-metric-card [style*="color: #cbd5e1"] {
+    color: var(--text-primary) !important;
+}
+
+/* Secondary/muted inline colors inside cards → text-secondary */
+.lg-card [style*="color: #94a3b8"],
+.lg-card [style*="color:#94a3b8"],
+.lg-card [style*="color: #64748b"],
+.lg-card [style*="color:#64748b"],
+.lg-card [style*="color: #a3a3a3"],
+.lg-card [style*="color:#a3a3a3"],
+.lg-finding-card [style*="color: #94a3b8"],
+.lg-finding-card [style*="color:#94a3b8"],
+.lg-finding-card [style*="color: #64748b"],
+.lg-finding-card [style*="color:#64748b"],
+.lg-finding-card [style*="color: #a3a3a3"],
+.lg-finding-card [style*="color:#a3a3a3"],
+.lg-metric-card [style*="color: #94a3b8"],
+.lg-metric-card [style*="color:#94a3b8"],
+.lg-metric-card [style*="color: #64748b"],
+.lg-metric-card [style*="color:#64748b"] {
+    color: var(--text-secondary) !important;
+    font-weight: 500 !important;
+}
+
+/* Same for nested span/div/strong within these cards */
+.lg-card span[style*="color: #ffffff"],
+.lg-card span[style*="color: #FFFFFF"],
+.lg-card div[style*="color: #ffffff"],
+.lg-card div[style*="color: #FFFFFF"],
+.lg-card strong[style*="color: #ffffff"],
+.lg-card strong[style*="color: #FFFFFF"],
+.lg-card span[style*="color: #cbd5e1"],
+.lg-card div[style*="color: #cbd5e1"],
+.lg-card strong[style*="color: #cbd5e1"],
+.lg-finding-card span[style*="color: #ffffff"],
+.lg-finding-card span[style*="color: #FFFFFF"],
+.lg-finding-card div[style*="color: #ffffff"],
+.lg-finding-card div[style*="color: #FFFFFF"],
+.lg-finding-card strong[style*="color: #ffffff"],
+.lg-finding-card strong[style*="color: #FFFFFF"],
+.lg-finding-card span[style*="color: #cbd5e1"],
+.lg-finding-card div[style*="color: #cbd5e1"],
+.lg-finding-card strong[style*="color: #cbd5e1"] {
+    color: var(--text-primary) !important;
+}
+.lg-card span[style*="color: #94a3b8"],
+.lg-card div[style*="color: #94a3b8"],
+.lg-card strong[style*="color: #94a3b8"],
+.lg-finding-card span[style*="color: #94a3b8"],
+.lg-finding-card div[style*="color: #94a3b8"],
+.lg-finding-card strong[style*="color: #94a3b8"] {
+    color: var(--text-secondary) !important;
+    font-weight: 500 !important;
+}
+
+/* ==========================================================================
+   20. RESPONSIVE ADJUSTMENTS
+   ========================================================================== */
+@media (max-width: 768px) {
+    .lg-title { font-size: 1.45rem; }
+    .lg-auth-product { font-size: 1.35rem; }
+    .st-key-auth_card, [class*="st-key-auth_card"] { padding: 1.3rem 1.1rem 1rem !important; }
+    .stTabs [data-baseweb="tab"] { padding: 0 0.7rem !important; font-size: 0.8rem !important; height: 2.4rem !important; min-height: 2.4rem !important; }
+}
+@media (max-width: 560px) {
+    .lg-auth-mark { width: 40px; height: 40px; font-size: 0.8rem; }
+}

@@ -152,7 +152,7 @@ def render():
 
                     status.update(label="Audit Pipeline Completed Successfully!", state="complete", expanded=False)
 
-                st.success(f"Audit completed for {selected_prop.get('name')}! Flagged {audit_result['findings_count']} discrepancy(ies). Potential Recovery: ${audit_result['total_potential_recovery']:,.2f}")
+                st.success(f"Audit completed for {selected_prop.get('name')}! Flagged {audit_result['findings_count']} discrepancy(ies). Potential Recovery: ₹{audit_result['total_potential_recovery']:,.2f}")
             except Exception as exc:
                 st.error("Unable to complete this audit. Please confirm the selected documents are readable and try again.")
 
@@ -172,11 +172,11 @@ def render():
                         <span>⚠️ {f['category']}</span>
                         <span class="lg-badge lg-badge-red">{f['severity'].upper()} SEVERITY</span>
                     </div>
-                    <div style="font-size: 0.9rem; color: #cbd5e1; margin-top: 0.4rem;">{f['explanation']}</div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.5rem; margin-top: 0.75rem; font-size: 0.85rem;">
-                        <div><strong style="color: #94a3b8;">Billed Amount:</strong> <span style="color: #ffffff;">${f['billed_amount']:,.2f}</span></div>
-                        <div><strong style="color: #94a3b8;">Allowed Amount:</strong> <span style="color: #ffffff;">${f['allowed_amount']:,.2f}</span></div>
-                        <div><strong style="color: #94a3b8;">Potential Recovery:</strong> <span style="color: #34d399; font-weight: 700;">${f['potential_recovery']:,.2f}</span></div>
+                    <div style="font-size: 0.9rem; color: #475569; margin-top: 0.5rem; font-weight: 500; line-height: 1.55;">{f['explanation']}</div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; margin-top: 0.85rem; font-size: 0.85rem;">
+                        <div><strong style="color: #475569; font-weight: 600;">Billed Amount:</strong> <span style="color: #111827; font-weight: 600;">₹{f['billed_amount']:,.2f}</span></div>
+                        <div><strong style="color: #475569; font-weight: 600;">Allowed Amount:</strong> <span style="color: #111827; font-weight: 600;">₹{f['allowed_amount']:,.2f}</span></div>
+                        <div><strong style="color: #475569; font-weight: 600;">Potential Recovery:</strong> <span style="color: #16A34A; font-weight: 800;">₹{f['potential_recovery']:,.2f}</span></div>
                     </div>
                 </div>
                 """,
