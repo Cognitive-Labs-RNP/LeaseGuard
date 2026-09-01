@@ -87,7 +87,21 @@ def render_auth_screen():
         with login_tab:
             st.markdown("<div class='lg-auth-card-title'>Welcome back</div><div class='lg-auth-card-copy'>Sign in to your LeaseGuard account.</div>", unsafe_allow_html=True)
             email = st.text_input("Email address", key="auth_login_email", placeholder="name@company.com")
-            password = st.text_input("Password", type="password", key="auth_login_password")
+
+            show_login_password = st.session_state.get("show_login_password", False)
+            pwd_col, eye_col = st.columns([5, 1])
+
+            with pwd_col:
+                password = st.text_input(
+                    "Password",
+                    type="default" if show_login_password else "password",
+                    key="auth_login_password",
+                    help="Use the eye icon to reveal or hide your password.",
+                )
+            with eye_col:
+                if st.button("👁", key="toggle_login_password", help="Show or hide password"):
+                    st.session_state["show_login_password"] = not show_login_password
+                    st.rerun()
 
             if st.button("Sign In", use_container_width=True, type="primary"):
                 try:
@@ -107,8 +121,31 @@ def render_auth_screen():
         with register_tab:
             st.markdown("<div class='lg-auth-card-title'>Create your account</div><div class='lg-auth-card-copy'>Start reviewing lease compliance with LeaseGuard.</div>", unsafe_allow_html=True)
             reg_email = st.text_input("Email address", key="auth_register_email", placeholder="name@company.com")
-            reg_password = st.text_input("Password", type="password", key="auth_register_password")
-            reg_confirm = st.text_input("Confirm password", type="password", key="auth_register_confirm")
+
+            show_register_password = st.session_state.get("show_register_password", False)
+            reg_pwd_col, reg_eye_col = st.columns([5, 1])
+            with reg_pwd_col:
+                reg_password = st.text_input(
+                    "Password",
+                    type="default" if show_register_password else "password",
+                    key="auth_register_password",
+                )
+            with reg_eye_col:
+                if st.button("👁", key="toggle_register_password", help="Show or hide password"):
+                    st.session_state["show_register_password"] = not show_register_password
+                    st.rerun()
+
+            reg_confirm_pwd_col, reg_confirm_eye_col = st.columns([5, 1])
+            with reg_confirm_pwd_col:
+                reg_confirm = st.text_input(
+                    "Confirm password",
+                    type="default" if show_register_password else "password",
+                    key="auth_register_confirm",
+                )
+            with reg_confirm_eye_col:
+                if st.button("👁", key="toggle_register_confirm_password", help="Show or hide confirm password"):
+                    st.session_state["show_register_password"] = not show_register_password
+                    st.rerun()
 
             if st.button("Create Account", use_container_width=True, type="primary"):
                 if reg_password != reg_confirm:

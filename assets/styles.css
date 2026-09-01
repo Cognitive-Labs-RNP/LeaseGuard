@@ -349,6 +349,30 @@ header[data-testid="stHeader"] button[kind="headerNoPadding"] span[color] {
     color: #FCA5A5 !important;
 }
 
+/* ---------- Default Streamlit sidebar nav (logged-in pages list) ---------- */
+div[data-testid="stSidebarNav"] * {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+    font-weight: 700 !important;
+    color: var(--sidebar-text) !important;
+}
+div[data-testid="stSidebarNav"] a,
+div[data-testid="stSidebarNav"] span,
+div[data-testid="stSidebarNav"] p,
+div[data-testid="stSidebarNav"] button,
+div[data-testid="stSidebarNav"] div[role="link"] {
+    font-size: 0.94rem !important;
+    line-height: 1.7 !important;
+}
+div[data-testid="stSidebarNav"] a {
+    padding: 0.4rem 0.45rem !important;
+    border-radius: 6px !important;
+}
+div[data-testid="stSidebarNav"] a:hover {
+    background: rgba(255,255,255,0.04) !important;
+}
+
 /* ---------- Navigation Radio Items ---------- */
 [data-testid="stSidebar"] [data-testid="stRadio"] {
     margin: 0;
@@ -377,9 +401,11 @@ header[data-testid="stHeader"] button[kind="headerNoPadding"] span[color] {
 [data-testid="stSidebar"] [data-testid="stRadio"] label p {
     color: var(--sidebar-text);
     font-size: 0.85rem;
-    font-weight: 600;
+    font-weight: 700;
     line-height: 1.3;
     margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
 /* ACTIVE nav item */
