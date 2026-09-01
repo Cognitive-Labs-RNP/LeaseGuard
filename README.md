@@ -1,422 +1,633 @@
 # 🛡️ LeaseGuard AI
 
-> **AI-Powered Lease Auditing & Financial Recovery Platform**  
-> *Built for commercial tenants and enterprises to automatically audit complex lease contracts against billing invoices, identify overcharges, quantify financial recovery, and generate contractual dispute letters.*
+> **AI-Powered Lease Auditing & Financial Recovery Platform**
+
+LeaseGuard AI helps commercial tenants identify potential lease overcharges by comparing lease terms with billing data, explaining discrepancies, estimating potential recovery, and tracking the recovery process.
+
+## What It Does
+
+LeaseGuard combines **RocketRide-powered document extraction** with **deterministic financial audit rules**.
+
+The core workflow is:
+
+```text
+Lease + Invoice
+       ↓
+RocketRide Extraction
+       ↓
+Validation
+       ↓
+Deterministic Audit
+       ↓
+Findings + Evidence
+       ↓
+Risk Score
+       ↓
+Potential Recovery
+       ↓
+Human Review
+       ↓
+Dispute Draft
+       ↓
+Recovery Tracking
+       ↓
+Portfolio Analytics
+```
+
+The AI extracts information from documents, but the financial audit itself is performed using predefined business rules rather than allowing an LLM to make unsupported financial decisions.
 
 ---
 
-## 📌 Project Overview
+## 🎯 The Problem
 
-Commercial real estate leases often contain intricate expense sharing rules, Common Area Maintenance (CAM) caps, capital expenditure exclusions, and base-year gross-up calculations. Manually auditing invoices against multi-hundred-page leases is expensive and error-prone, resulting in billions of dollars in unrecovered landlord overcharges annually.
+Commercial leases can contain complex rules covering:
 
-**LeaseGuard AI** automates this audit lifecycle:
-1. **Property & Portfolio Management:** Ingest and catalog commercial properties and lease contracts.
-2. **AI Document Ingestion:** Extract structured financial rules, CAM caps, and invoice line items via RocketRide and Gemini LLM.
-3. **Automated Audit Engine:** Reconcile line items against lease covenants and identify discrepancies.
-4. **Risk Scoring Engine:** Quantify lease ambiguity and landlord billing risk.
-5. **Financial Recovery Tracker:** Track claims from identification to landlord credit settlement.
-6. **Dispute Letter Generation:** Generate legally grounded dispute packages with lease clause citations.
-7. **Portfolio Analytics:** Multi-property trend analysis and landlord compliance benchmarks.
+* Common Area Maintenance (CAM) charges
+* CAM caps
+* Excluded expenses
+* Rent escalations
+* Administrative fees
+* Tenant expense shares
+* Other negotiated billing terms
 
----
+Manually checking invoices against these terms is time-consuming and makes it easy for overcharges to go unnoticed.
 
-## 🛠️ Technology Stack
-
-- **Frontend & App Framework:** [Streamlit](https://streamlit.io/) with custom CSS design system
-- **Charts & Visualizations:** [Plotly](https://plotly.com/)
-- **Document Processing:** [PyMuPDF (fitz)](https://pymupdf.readthedocs.io/)
-- **AI Pipelines & LLM:** RocketRide Pipelines powered by Google Gemini *(Future Phase)*
-- **Database & Storage:** Supabase / PostgreSQL *(Future Phase)*
-- **Document Export:** ReportLab PDF Generator *(Future Phase)*
+LeaseGuard turns this into a repeatable audit workflow that helps a tenant identify **what may be wrong, why it may be wrong, and how much money may be involved.**
 
 ---
 
-## 📁 Directory Structure
+## ✨ Core Capabilities
+
+### 📄 Document Processing
+
+* Upload lease and invoice documents
+* Extract relevant information through RocketRide
+* Validate extracted information before financial calculations
+* Handle invalid, empty, or unreadable documents gracefully
+
+### 🔍 Deterministic Lease Auditing
+
+LeaseGuard currently checks rules including:
+
+* CAM cap violations
+* Excluded expenses
+* Rent escalation overages
+* Administrative fee overages
+* Tenant-share calculation errors
+
+Each finding includes the relevant values, severity, recovery amount, and supporting evidence.
+
+### 📊 Risk Analysis
+
+Generates a 0–100 risk score with levels:
+
+* Low
+* Moderate
+* High
+* Critical
+
+Risk is also broken down into categories such as CAM, rent escalation, administrative fees, tax, and audit rights.
+
+### 💰 Recovery Tracking
+
+Tracks potential recovery through stages such as:
+
+```text
+Detected
+   ↓
+Disputed
+   ↓
+Under Review
+   ↓
+Recovered / Rejected
+```
+
+### ⚖️ Dispute Drafting
+
+RocketRide can generate a dispute explanation/draft based on the identified finding and supporting information.
+
+The generated draft is intended for **human review before submission**.
+
+### 📈 Portfolio Analytics
+
+The dashboard provides:
+
+* Portfolio KPIs
+* Risk distribution
+* Findings by category
+* Recovery pipeline
+* Historical trends
+* Property-level comparisons
+* Multi-property analytics
+
+### 🛡️ Validation & Graceful Failure
+
+LeaseGuard does not silently treat failed or incomplete extraction as valid financial analysis.
+
+The application handles cases such as:
+
+* Missing API keys
+* Invalid PDFs
+* Empty PDFs
+* AI/provider errors
+* Malformed AI responses
+* Missing lease values
+* Missing invoice values
+* Supabase connection/database errors
+
+Individual failures are surfaced to the user without crashing the entire application.
+
+---
+
+# 🏗️ Architecture
+
+```text
+                    ┌──────────────────┐
+                    │   Lease / Invoice│
+                    └────────┬─────────┘
+                             ↓
+                    ┌──────────────────┐
+                    │    RocketRide    │
+                    │ Document/AI Flow │
+                    └────────┬─────────┘
+                             ↓
+                    ┌──────────────────┐
+                    │    Validation    │
+                    └────────┬─────────┘
+                             ↓
+             ┌───────────────┴───────────────┐
+             ↓                               ↓
+     ┌─────────────────┐            ┌─────────────────┐
+     │  Audit Engine   │            │   Risk Engine   │
+     │ Deterministic   │            │   0–100 Score   │
+     └────────┬────────┘            └────────┬────────┘
+              ↓                              ↓
+              └──────────────┬───────────────┘
+                             ↓
+                    ┌──────────────────┐
+                    │ Recovery Engine  │
+                    └────────┬─────────┘
+                             ↓
+                    ┌──────────────────┐
+                    │    Supabase      │
+                    │ PostgreSQL + Auth│
+                    └────────┬─────────┘
+                             ↓
+                    ┌──────────────────┐
+                    │ Streamlit UI     │
+                    │ Dashboard        │
+                    └──────────────────┘
+```
+
+---
+
+# 🛠️ Technology Stack
+
+| Layer               | Technology            |
+| ------------------- | --------------------- |
+| Application         | Streamlit             |
+| Styling             | Custom CSS            |
+| Charts              | Plotly                |
+| Document processing | PyMuPDF               |
+| AI orchestration    | RocketRide            |
+| LLM                 | Google Gemini         |
+| AI fallback         | Groq                  |
+| Validation          | Pydantic              |
+| Database            | Supabase / PostgreSQL |
+| Authentication      | Supabase Auth         |
+| Language            | Python                |
+| Testing             | Pytest                |
+
+RocketRide is used as the AI pipeline/orchestration layer for document extraction and dispute drafting.
+
+The financial audit rules remain deterministic and are implemented independently of the LLM.
+
+---
+
+# 📁 Project Structure
 
 ```text
 LeaseGuard/
-├── app.py                     # Main Streamlit application entry point & router
-├── pages/                     # Application views
-│   ├── dashboard.py           # Executive KPI overview & system health
-│   ├── properties.py          # Property portfolio management
-│   ├── documents.py           # Document vault (Lease & Invoice upload)
-│   ├── audits.py              # Audit session execution & run history
-│   ├── findings.py            # Overcharge findings & clause inspector
-│   ├── risk.py                # Lease & portfolio risk scoring
-│   ├── recovery.py            # Financial recovery tracking pipeline
-│   ├── disputes.py            # Dispute letter generator & exporter
-│   └── analytics.py           # Multi-property analytics & landlord scorecard
-├── services/                  # Modular backend & calculation service layer
-│   ├── ai.py                  # RocketRide & Gemini AI pipeline wrapper
-│   ├── audit_engine.py        # Rule reconciliation engine
-│   ├── risk_engine.py         # Risk calculation algorithms
-│   ├── recovery_engine.py     # Financial recovery calculators
-│   └── supabase.py            # Supabase database & storage client
-├── pipelines/                 # RocketRide AI pipeline definitions (Future)
-├── prompts/                   # System prompt templates for extraction & drafting (Future)
-├── utils/                     # Helper utilities
-│   └── css_loader.py          # Custom CSS injector
-├── assets/                    # Static assets & stylesheets
-│   └── styles.css             # Modern design system stylesheet
-├── requirements.txt           # Python dependencies
-├── .env.example               # Environment configuration template
-└── README.md                  # Project documentation
+│
+├── app.py
+│
+├── pages/
+│   ├── dashboard.py
+│   ├── properties.py
+│   ├── documents.py
+│   ├── audits.py
+│   ├── findings.py
+│   ├── risk_analysis.py
+│   ├── recovery.py
+│   ├── disputes.py
+│   ├── analytics.py
+│   └── settings.py
+│
+├── services/
+│   ├── ai.py
+│   ├── audit_engine.py
+│   ├── risk_engine.py
+│   ├── recovery_engine.py
+│   └── supabase_persistence.py
+│
+├── pipelines/
+│   └── lease_extraction.pipe
+│
+├── database/
+│   └── schema.sql
+│
+├── tests/
+│   ├── test_lease_extraction.py
+│   └── test_phase4_business_logic.py
+│
+├── ui/
+│   └── custom_theme.py
+│
+├── .env.example
+├── requirements.txt
+└── README.md
 ```
 
 ---
 
-## 🚀 Local Setup & Running Locally
+# 🚀 Getting Started
 
-### 1. Prerequisites
-- Python 3.10+ installed on your system.
-- A Supabase project already created.
+## 1. Prerequisites
 
-### 2. Create a Supabase project
-1. Go to https://supabase.com and create a new project.
-2. Wait for the project to finish provisioning.
+* Python 3.10+
+* A Supabase project
+* RocketRide access for live AI extraction
+* Gemini API access for live LLM processing
 
-### 3. Enable Email authentication
-1. In your Supabase dashboard, open Authentication.
-2. Go to Providers.
-3. Enable Email authentication.
-4. Leave the rest of the default settings alone for now.
+Demo mode can be used without the external services.
 
-### 4. Open the SQL Editor and run the schema
-1. In Supabase, open SQL Editor.
-2. Copy the contents of `database/schema.sql`.
-3. Paste it into the SQL Editor.
-4. Run the SQL.
+---
 
-> Do not use the Supabase API to auto-create tables. This project expects the schema to be created manually in the dashboard.
+## 2. Install Dependencies
 
-### 5. Configure environment variables
-Copy `.env.example` to `.env`:
+From the project root:
+
 ```bash
-# Windows (PowerShell)
+pip install -r requirements.txt
+```
+
+---
+
+## 3. Configure Environment Variables
+
+Copy the example environment file:
+
+### Windows PowerShell
+
+```powershell
 copy .env.example .env
-
-# macOS / Linux
-cp .env.example .env
-```
-Then update `.env` with the values from your Supabase project:
-```env
-SUPABASE_URL=https://your-project-id.supabase.co
-SUPABASE_KEY=your-anon-key-or-project-key
 ```
 
-### 6. Install Dependencies
-```bash
-pip install -r requirements.txt
-```
-
-### 7. Launch the Application
-```bash
-streamlit run app.py
-```
-
-The app will open automatically in your browser at `http://localhost:8501`.
-
----
-
-## 🔐 Supabase Auth & Schema Responsibilities
-
-### What Supabase Auth handles
-Supabase Auth manages user authentication, including:
-- Email/password signup
-- Login and logout
-- Session tracking
-- Current authenticated user lookups
-- Secure handling of the auth.users table
-
-This app does not implement custom password hashing. We rely on Supabase's built-in authentication system.
-
-### What the SQL schema handles
-The SQL schema in `database/schema.sql` creates the application-owned tables for:
-- properties
-- documents
-- audits
-- findings
-- risk_scores
-- recovery_records
-- disputes
-
-These tables are not the authentication system. They are the business data tables used by LeaseGuard.
-
-### How user_id connects authenticated users to their properties
-Every application-owned record that needs ownership includes a `user_id` UUID column. This points to `auth.users(id)`.
-
-That means:
-- A user signs in through Supabase Auth.
-- The app reads the authenticated user's ID.
-- Each property, document, audit, finding, risk score, recovery record, and dispute can be linked to that user.
-- Queries can filter by `user_id` to ensure a user only sees their own data.
-
-### How to manually run the SQL
-1. Create your Supabase project.
-2. Go to Authentication → Providers.
-3. Enable Email authentication.
-4. Open SQL Editor.
-5. Copy and paste the contents of `database/schema.sql`.
-6. Run the SQL.
-7. Create `.env` from `.env.example`.
-8. Add `SUPABASE_URL` and `SUPABASE_KEY`.
-9. Run `streamlit run app.py`.
-
----
-
-## 🗺️ Implementation Status
-
-- [x] **Phase 1: Foundation & Scaffolding** (Streamlit app, 9 page views, modular services, CSS design system, configuration templates)
-- [x] **Phase 2: Supabase Auth & Database Schema** (Email/password auth flow, schema for user-owned records, current-user helpers, setup docs)
-- [x] **Phase 3: RocketRide & AI Pipeline Integration** (Gemini primary LLM, Groq fallback, Pydantic extraction validation, graceful error handling)
-- [x] **Phase 4: Audit & Risk Engines** (Deterministic audit reconciliation, risk scoring, recovery tracking, graceful fallback in demo mode)
-- [x] **Phase 5: Final Integration & Hardening** (Demo mode support, optional RocketRide SDK, safe file parsing, error tolerance, ready for hackathon demo)
-
----
-
-## 🚀 Getting Started
-
-### 1. How to Run the App
-
-From the project root, install dependencies and launch:
+### macOS / Linux
 
 ```bash
-pip install -r requirements.txt
-streamlit run app.py
-```
-
-The app opens automatically at `http://localhost:8501`.
-
-**For demo mode** (no external services required):
-
-```bash
-# Windows (PowerShell)
-$env:APP_ENV = "demo"
-$env:DEMO_MODE = "true"
-pip install -r requirements.txt
-streamlit run app.py
-```
-
-```bash
-# macOS / Linux
-export APP_ENV=demo
-export DEMO_MODE=true
-pip install -r requirements.txt
-streamlit run app.py
-```
-
-Demo mode uses realistic pre-populated sample data and gracefully handles missing API keys, Supabase outages, and RocketRide/Gemini downtime. Perfect for testing, demos, and CI/CD verification.
-
----
-
-### 2. Required Environment Variables
-
-Create a `.env` file from `.env.example`:
-
-```bash
-# Windows (PowerShell)
-copy .env.example .env
-
-# macOS / Linux
 cp .env.example .env
 ```
 
-**Minimum configuration for live mode:**
+Configure the required values in `.env`.
+
+### Supabase
 
 ```env
-# Supabase (Auth + Database)
 SUPABASE_URL=https://your-project-id.supabase.co
-SUPABASE_KEY=your-anon-or-service-role-key
+SUPABASE_KEY=your-supabase-key
+```
 
-# RocketRide Cloud (AI Pipeline Orchestration)
+### RocketRide
+
+```env
 ROCKETRIDE_URI=https://api.rocketride.ai:443
-ROCKETRIDE_APIKEY=rr_your_rocketride_user_token
+ROCKETRIDE_APIKEY=your-rocketride-api-key
+```
 
-# LLM Providers (Managed by RocketRide)
+### Gemini
+
+```env
 GEMINI_API_KEY=your-gemini-api-key
+```
+
+### Optional fallback provider
+
+```env
 GROQ_API_KEY=your-groq-api-key
 ```
 
-**For demo mode**, most values can be left blank:
+Use placeholders only in `.env.example`.
 
-```env
-APP_ENV=demo
-DEMO_MODE=true
+Never commit real credentials.
+
+---
+
+# 🗄️ Supabase Setup
+
+LeaseGuard uses Supabase for authentication and application data.
+
+## Create the project
+
+Create a project through Supabase and enable Email/Password authentication.
+
+## Create the database tables
+
+Open the Supabase SQL Editor and run:
+
+```text
+database/schema.sql
 ```
 
-All other variables in `.env.example` have sensible defaults and are optional.
+The schema contains the application's business tables, including:
+
+* properties
+* documents
+* audits
+* findings
+* risk scores
+* recovery records
+* disputes
+
+Supabase Auth manages user accounts separately through `auth.users`.
+
+Application records are associated with authenticated users using `user_id`.
 
 ---
 
-### 3. Supabase Setup
+# 🤖 RocketRide Setup
 
-Supabase provides both authentication and the PostgreSQL database for LeaseGuard:
+RocketRide is the AI pipeline layer used by LeaseGuard.
 
-1. **Create a Supabase project:**
-   - Go to [supabase.com](https://supabase.com) and sign up.
-   - Create a new project and wait for provisioning to complete.
+The project includes:
 
-2. **Enable Email authentication:**
-   - In your Supabase dashboard, go to **Authentication → Providers**.
-   - Enable **Email authentication** and leave default settings.
+```text
+pipelines/lease_extraction.pipe
+```
 
-3. **Run the database schema:**
-   - In your Supabase dashboard, open **SQL Editor**.
-   - Copy the entire contents of `database/schema.sql`.
-   - Paste and run the SQL.
+The extraction workflow is responsible for obtaining structured lease information from uploaded documents.
 
-   > ⚠️ Do not use the Supabase API to auto-create tables. This project expects manual schema setup in the dashboard SQL Editor.
+RocketRide is also used for dispute explanation/draft generation.
 
-4. **Add credentials to `.env`:**
+For live operation, configure the required RocketRide credentials in `.env`.
 
-   ```env
-   SUPABASE_URL=https://your-project-id.supabase.co
-   SUPABASE_KEY=your-anon-or-service-role-key
-   ```
-
-**Graceful fallback:** If Supabase is unavailable, the app automatically switches to demo mode and continues operating.
+If the optional local RocketRide SDK is included in the project environment, install it according to the provided project setup.
 
 ---
 
-### 4. RocketRide Setup
+# 🧠 Gemini Setup
 
-RocketRide orchestrates AI pipelines with Gemini (primary) and Groq (fallback) LLMs for lease and invoice extraction:
+Gemini is used as the primary LLM provider through the AI pipeline.
 
-1. **Connect your workspace to a RocketRide environment:**
-   - If this project is already connected to a RocketRide-backed workspace, credentials may already be available.
-   - If not, set up a RocketRide connection through your organization's deployment.
+Add your API key:
 
-2. **Add RocketRide credentials to `.env`:**
+```env
+GEMINI_API_KEY=your-gemini-api-key
+```
 
-   ```env
-   ROCKETRIDE_URI=https://api.rocketride.ai:443
-   ROCKETRIDE_APIKEY=rr_your_rocketride_user_token
-   ```
+If the configured primary provider fails and the fallback provider is available, LeaseGuard can use the configured fallback path.
 
-3. **Install the local RocketRide SDK** (if available):
-
-   If your workspace includes a vendored SDK at `.rocketride/client/rocketride.tgz`, install it:
-
-   ```bash
-   pip install .rocketride/client/rocketride.tgz
-   ```
-
-**Note:** The app works without the RocketRide SDK installed. If credentials are missing or the SDK is unavailable, the app gracefully degrades to demo mode and returns structured error payloads instead of crashing.
+If AI services are unavailable, the application reports the failure rather than presenting fabricated analysis.
 
 ---
 
-### 5. Gemini Setup
+# ▶️ Run the Application
 
-To enable live AI extraction of lease and invoice financial data:
+Start Streamlit from the project root:
 
-1. **Obtain a Gemini API key:**
-   - Go to [Google AI Studio](https://aistudio.google.com/app/apikey).
-   - Create or copy an existing API key.
+```bash
+streamlit run app.py
+```
 
-2. **Add to `.env`:**
+The application will normally be available at:
 
-   ```env
-   GEMINI_API_KEY=your-gemini-api-key
-   ROCKETRIDE_GEMINI_KEY=your-gemini-api-key
-   ```
-
-**Fallback & resilience:**
-- If Gemini fails (rate limit, quota, timeout), the app automatically tries Groq.
-- If both providers fail, a clean error payload is returned — the app does not crash.
-- In demo mode, extraction uses realistic pre-populated sample data.
+```text
+http://localhost:8501
+```
 
 ---
 
-### 6. Demo Mode Workflow
+# 🎭 Demo Mode
 
-For a complete, deterministic, fully-functional demo without external services:
+LeaseGuard includes a clearly labelled demo mode for demonstrations and testing.
 
-**Setup:**
+Demo results are **fictional sample data** and are not presented as real financial analysis.
 
-1. Create `.env` from `.env.example`.
-2. Set:
+### Enable Demo Mode
 
-   ```env
-   APP_ENV=demo
-   DEMO_MODE=true
-   ```
+Windows PowerShell:
 
-3. Install and run:
+```powershell
+$env:APP_ENV = "demo"
+$env:DEMO_MODE = "true"
+streamlit run app.py
+```
 
-   ```bash
-   pip install -r requirements.txt
-   streamlit run app.py
-   ```
+macOS / Linux:
 
-**Complete demo walkthrough:**
+```bash
+export APP_ENV=demo
+export DEMO_MODE=true
+streamlit run app.py
+```
 
-1. **Sign in:** Use the demo auth path (or the app auto-loads demo user).
-2. **Properties page:** View or create a sample commercial property.
-3. **Documents page:** Upload a lease PDF/text file and an invoice PDF/text file (or use demo samples).
-4. **Audits page:** Run an audit to extract lease rules and invoice line items.
-5. **Findings page:** Review extracted lease financial rules and identified discrepancies.
-6. **Risk page:** View lease ambiguity risk scoring and portfolio risk summary.
-7. **Recovery page:** Track financial recovery claims from initial finding to settlement.
-8. **Disputes page:** Generate a formal, evidence-backed dispute letter with lease citations.
-9. **Analytics page:** Multi-property trend analysis and landlord compliance benchmarks.
+Demo mode allows the application to be demonstrated even when external services are unavailable.
 
-All operations use graceful demo data and safe fallbacks. No external API keys, no live Supabase connection required. Perfect for presentations, testing, and CI/CD pipelines.
+The interface clearly identifies demo/sample results so they are not confused with real analysis.
 
 ---
 
-## 🧪 Testing
+# 🎬 Exact Demo Workflow
 
-Run the full test suite:
+For a hackathon demonstration:
+
+### 1. Sign in
+
+Enter the application and access the LeaseGuard dashboard.
+
+### 2. Select a property
+
+Choose an existing demo property or create one.
+
+### 3. Upload documents
+
+Upload:
+
+* a lease
+* the corresponding invoice
+
+### 4. Extract information
+
+RocketRide processes the documents and extracts the relevant lease and invoice information.
+
+### 5. Validate
+
+The extracted information is checked before being used for financial calculations.
+
+If required information is missing or malformed, the workflow stops and asks for review rather than producing an unreliable result.
+
+### 6. Run the audit
+
+The deterministic audit engine compares the extracted billing information against the lease rules.
+
+### 7. Review findings
+
+LeaseGuard displays detected discrepancies, severity, recovery amounts, and supporting evidence.
+
+### 8. Review risk
+
+The risk engine calculates the property's risk score.
+
+### 9. Review recovery
+
+The recovery engine calculates the potential recovery amount and adds it to the recovery workflow.
+
+### 10. Generate a dispute draft
+
+RocketRide generates a dispute explanation based on the finding.
+
+The user reviews the generated content before taking action.
+
+### 11. Track recovery
+
+Update the recovery status as the claim progresses.
+
+### 12. Return to Dashboard
+
+Verify that portfolio KPIs reflect the new audit.
+
+### 13. Open Analytics
+
+Verify that the audit appears in historical analytics.
+
+### 14. Compare properties
+
+Use multiple properties to demonstrate portfolio-level risk and recovery comparisons.
+
+---
+
+# 🧪 Testing
+
+Run the test suite:
 
 ```bash
 python -m pytest -q
 ```
 
-Expected output:
+Also verify that the Streamlit application starts cleanly:
 
+```bash
+streamlit run app.py
 ```
-19 passed in ~5s
-```
 
-The test suite validates:
-- Pydantic schema validation for lease extraction
-- Empty input and error handling
-- AI provider fallback logic
-- Deterministic engine calculations
-- Demo mode safety and graceful degradation
+The project should be tested for:
 
-All tests pass in isolation and work in both live and demo modes.
+* lease extraction
+* business-rule calculations
+* risk calculations
+* recovery calculations
+* malformed AI responses
+* missing values
+* invalid documents
+* external service failures
+* database failures
+* demo mode
+* multi-property data handling
+
+Only tested functionality should be considered complete.
 
 ---
 
-## ❓ FAQ & Troubleshooting
+# 🛡️ Human Oversight
 
-### Q: Can I run the app without Supabase?
-**A:** Yes. Set `DEMO_MODE=true` and the app uses in-memory demo data. Perfect for local testing.
+LeaseGuard is designed so that AI does not independently make final financial decisions.
 
-### Q: Can I run the app without RocketRide or Gemini?
-**A:** Yes. The RocketRide Python SDK is optional, and Gemini/Groq credentials are optional. In demo mode or when credentials are missing, the app uses graceful fallbacks and sample data.
+The division of responsibility is:
 
-### Q: What happens if my Supabase connection drops during use?
-**A:** The app gracefully catches the error, logs it, and either returns a safe error payload or switches to demo mode. It never crashes.
+```text
+RocketRide
+    ↓
+Extract information
+    ↓
+Validate information
+    ↓
+Deterministic audit rules
+    ↓
+Findings
+    ↓
+Human review
+    ↓
+Dispute draft
+    ↓
+Human decision
+```
 
-### Q: Can I upload PDFs, or only text files?
-**A:** Both. The app uses PyMuPDF to extract text from PDFs and gracefully handles malformed or unreadable PDFs by warning the user instead of crashing.
-
-### Q: Is the `.env` file committed to Git?
-**A:** No. `.env` is listed in `.gitignore` and never committed. Only `.env.example` is in version control.
-
-### Q: How does the app choose between Gemini and Groq?
-**A:** It always tries Gemini first. If Gemini fails, it automatically falls back to Groq. If both fail, it returns a structured error payload.
+The generated findings and dispute drafts are intended to support a human reviewer, not replace them.
 
 ---
 
-## 📝 Architecture & Design Notes
+# 🔐 Security
 
-- **Hackathon-ready**: The app gracefully handles missing API keys, Supabase downtime, and broken uploads. No configuration surprises.
-- **Graceful degradation**: Every major operation returns a status payload (`status: "success" | "error" | "demo"`). The app never crashes due to one failed external API call.
-- **Demo-first design**: Demo mode uses realistic pre-populated data and is clearly labeled as demo data, never mistaken for live analysis.
-- **Optional SDK**: The RocketRide Python SDK is optional at runtime. Tests and demo mode work without it installed.
-- **Modular services**: Business logic is separated into `services/` (AI, audit engine, risk engine, recovery engine, Supabase) and page views focus on UI only.
-- **Pydantic validation**: All AI-extracted data is validated against structured schemas before use.
-- **.env security**: Environment variables are managed via `python-dotenv`. The `.env` file is local-only and never committed.
+Never commit:
+
+* `.env`
+* API keys
+* passwords
+* Supabase private/service credentials
+* RocketRide credentials
+
+Only `.env.example` with placeholder values should be committed.
+
+Before publishing the repository, verify that no secrets are present in the Git history or tracked files.
+
+---
+
+# 📊 Current Status
+
+## Completed
+
+* [x] User authentication
+* [x] Property management
+* [x] Document upload
+* [x] RocketRide extraction pipeline
+* [x] AI extraction validation
+* [x] Deterministic audit engine
+* [x] Risk scoring
+* [x] Recovery tracking
+* [x] Supabase persistence
+* [x] Findings interface
+* [x] Risk analytics
+* [x] Recovery workflow
+* [x] Dispute generation
+* [x] Portfolio analytics
+* [x] Multi-property comparison
+* [x] Error handling
+* [x] Demo mode
+* [x] Test suite
+* [x] Hackathon demo workflow
+
+---
+
+# ⚠️ Current Limitations
+
+LeaseGuard is a **hackathon-ready prototype**, not a replacement for professional legal, accounting, or financial review.
+
+AI extraction can fail or require human verification, particularly with unusual or poorly structured documents.
+
+Potential recovery amounts are estimates generated from the available lease and invoice information and should be reviewed before being used in an actual dispute.
+
+External services such as RocketRide, Gemini, Groq, and Supabase may experience outages, rate limits, or configuration failures.
+
+---
+
+# 🏆 Hackathon Demo Principle
+
+LeaseGuard's core design is intentionally:
+
+> **AI for extraction. Deterministic logic for financial auditing. Humans for final decisions.**
+
+The objective is not simply to produce an AI-generated answer.
+
+It is to create an auditable workflow that takes a lease and an invoice and turns them into:
+
+**evidence → finding → risk → potential recovery → human-reviewed action.**
